@@ -1,0 +1,305 @@
+import React, { useState } from 'react';
+import './App.css';
+import Dashboard from './components/Dashboard';
+import DataTable from './components/DataTable';
+import LogViewer from './components/LogViewer';
+import useUsageData from './hooks/useUsageData';
+import { formatBytes, formatDate, formatNumber } from './utils/formatters';
+
+function App() {
+  const { usageData, loading, error, refetch } = useUsageData();
+  const [activeTab, setActiveTab] = useState('summary');
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [viewMode, setViewMode] = useState('daily');
+
+  if (loading) {
+    return (
+      <div className="App">
+        <div className="loading">
+          <h2>Claude Code 使用量ダッシュボード</h2>
+          <p>データを読み込んでいます...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="App">
+        <div className="error">
+          <h2>Claude Code 使用量ダッシュボード</h2>
+          <p>エラーが発生しました: {error}</p>
+          <button onClick={refetch}>再試行</button>
+        </div>
+      </div>
+    );
+  }
+
+  // テーブル列定義
+  const mcpColumns = [
+    { key: 'file', title: 'ファイル名', type: 'text' },
+    { key: 'size', title: 'サイズ', type: 'bytes' },
+    { key: 'entries', title: 'エントリ数', type: 'number' },
+    { key: 'timestamp', title: '更新日時', type: 'date' },
+    { key: 'sessionId', title: 'セッションID', type: 'text' }
+  ];
+
+  const todoColumns = [
+    { key: 'file', title: 'ファイル名', type: 'text' },
+    { key: 'size', title: 'サイズ', type: 'bytes' },
+    { key: 'taskCount', title: 'タスク数', type: 'number' },
+    { key: 'timestamp', title: '更新日時', type: 'date' }
+  ];
+
+  const vscodeColumns = [
+    { key: 'taskId', title: 'タスクID', type: 'text' },
+    { key: 'messageCount', title: 'メッセージ数', type: 'number' },
+    { key: 'conversationCount', title: '会話数', type: 'number' },
+    { key: 'timestamp', title: '更新日時', type: 'date' }
+  ];
+
+  const dailyColumns = [
+    { key: 'date', title: '日付', type: 'text' },
+    { key: 'totalTokens', title: '総トークン数', type: 'number' },
+    { key: 'inputTokens', title: '入力トークン', type: 'number' },
+    { key: 'outputTokens', title: '出力トークン', type: 'number' },
+    { key: 'cachedTokens', title: 'キャッシュトークン', type: 'number' },
+    { key: 'cost', title: 'コスト', type: 'currency' },
+    { key: 'sessions', title: 'セッション数', type: 'number' }
+  ];
+
+  const monthlyColumns = [
+    { key: 'month', title: '月', type: 'text' },
+    { key: 'totalTokens', title: '総トークン数', type: 'number' },
+    { key: 'inputTokens', title: '入力トークン', type: 'number' },
+    { key: 'outputTokens', title: '出力トークン', type: 'number' },
+    { key: 'cachedTokens', title: 'キャッシュトークン', type: 'number' },
+    { key: 'cost', title: 'コスト', type: 'currency' },
+    { key: 'sessions', title: 'セッション数', type: 'number' },
+    { key: 'messages', title: 'メッセージ数', type: 'number' }
+  ];
+
+  const modelColumns = [
+    { key: 'model', title: 'モデル', type: 'text' },
+    { key: 'totalTokens', title: '総トークン数', type: 'number' },
+    { key: 'inputTokens', title: '入力トークン', type: 'number' },
+    { key: 'outputTokens', title: '出力トークン', type: 'number' },
+    { key: 'cachedTokens', title: 'キャッシュトークン', type: 'number' },
+    { key: 'cost', title: 'コスト', type: 'currency' },
+    { key: 'sessions', title: 'セッション数', type: 'number' },
+    { key: 'messages', title: 'メッセージ数', type: 'number' }
+  ];
+
+  const projectColumns = [
+    { key: 'name', title: 'プロジェクト名', type: 'text' },
+    { key: 'totalTokens', title: '総トークン数', type: 'number' },
+    { key: 'totalCost', title: '総コスト', type: 'currency' },
+    { key: 'messageCount', title: 'メッセージ数', type: 'number' },
+    { key: 'lastActivity', title: '最終アクティビティ', type: 'date' }
+  ];
+
+  const handleLogClick = (log) => {
+    setSelectedLog(log);
+  };
+
+  const closeLogViewer = () => {
+    setSelectedLog(null);
+  };
+
+  const renderTabContent = () => {
+    if (!usageData) return null;
+
+    switch (activeTab) {
+      case 'summary':
+        return (
+          <Dashboard
+            usageData={usageData}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            formatNumber={formatNumber}
+            formatBytes={formatBytes}
+            formatDate={formatDate}
+          />
+        );
+
+      case 'mcp':
+        return (
+          <div className="tab-content">
+            <h2>MCPログ</h2>
+            <DataTable
+              data={usageData.mcpLogs}
+              columns={mcpColumns}
+              onRowClick={handleLogClick}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      case 'todos':
+        return (
+          <div className="tab-content">
+            <h2>Todo履歴</h2>
+            <DataTable
+              data={usageData.todos}
+              columns={todoColumns}
+              onRowClick={handleLogClick}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      case 'vscode':
+        return (
+          <div className="tab-content">
+            <h2>VS Code拡張</h2>
+            <DataTable
+              data={usageData.vsCodeLogs}
+              columns={vscodeColumns}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      case 'daily':
+        return (
+          <div className="tab-content">
+            <h2>日別使用量</h2>
+            <DataTable
+              data={usageData.dailyUsage}
+              columns={dailyColumns}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      case 'monthly':
+        return (
+          <div className="tab-content">
+            <h2>月別使用量</h2>
+            <DataTable
+              data={usageData.monthlyUsage}
+              columns={monthlyColumns}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      case 'models':
+        return (
+          <div className="tab-content">
+            <h2>モデル別使用量</h2>
+            <DataTable
+              data={usageData.modelUsage}
+              columns={modelColumns}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      case 'projects':
+        return (
+          <div className="tab-content">
+            <h2>プロジェクト別使用量</h2>
+            <DataTable
+              data={usageData.projects}
+              columns={projectColumns}
+              formatDate={formatDate}
+              formatBytes={formatBytes}
+              formatNumber={formatNumber}
+            />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <h1>Claude Code 使用量ダッシュボード</h1>
+        <button onClick={refetch} className="refresh-button">
+          データを更新
+        </button>
+      </header>
+
+      <nav className="tab-nav">
+        <button 
+          className={activeTab === 'summary' ? 'active' : ''}
+          onClick={() => setActiveTab('summary')}
+        >
+          サマリー
+        </button>
+        <button 
+          className={activeTab === 'mcp' ? 'active' : ''}
+          onClick={() => setActiveTab('mcp')}
+        >
+          MCPログ
+        </button>
+        <button 
+          className={activeTab === 'todos' ? 'active' : ''}
+          onClick={() => setActiveTab('todos')}
+        >
+          Todo履歴
+        </button>
+        <button 
+          className={activeTab === 'vscode' ? 'active' : ''}
+          onClick={() => setActiveTab('vscode')}
+        >
+          VS Code拡張
+        </button>
+        <button 
+          className={activeTab === 'daily' ? 'active' : ''}
+          onClick={() => setActiveTab('daily')}
+        >
+          日別使用量
+        </button>
+        <button 
+          className={activeTab === 'monthly' ? 'active' : ''}
+          onClick={() => setActiveTab('monthly')}
+        >
+          月別使用量
+        </button>
+        <button 
+          className={activeTab === 'models' ? 'active' : ''}
+          onClick={() => setActiveTab('models')}
+        >
+          モデル別使用量
+        </button>
+        <button 
+          className={activeTab === 'projects' ? 'active' : ''}
+          onClick={() => setActiveTab('projects')}
+        >
+          プロジェクト別使用量
+        </button>
+      </nav>
+
+      <main className="main-content">
+        {renderTabContent()}
+      </main>
+
+      {selectedLog && (
+        <LogViewer
+          selectedLog={selectedLog}
+          onClose={closeLogViewer}
+          formatDate={formatDate}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;

@@ -1,0 +1,246 @@
+# Claude Usage Dashboard
+
+A web service for visualizing Claude Code usage data from local PC. This application reads Claude Code data locally and provides insights into usage patterns.
+
+## Project Overview
+
+### Architecture
+- **Backend**: Node.js + Express (Modular architecture with services, routes, middleware)
+- **Frontend**: React (Component-based with custom hooks)
+- **Container**: Docker (Multi-stage build with Alpine Linux)
+- **Data Sources**: Local Claude Code files (MCP logs, todos, VS Code extension data)
+
+### Project Structure
+```
+claude-usage-dashboard/
+├── package.json           # Unified package.json (Flat structure)
+├── server.js             # Express server entry point
+├── src/
+│   ├── components/        # React components
+│   │   ├── Dashboard.js
+│   │   ├── DataTable.js
+│   │   ├── LogViewer.js
+│   │   ├── SummaryCard.js
+│   │   └── UsageChart.js
+│   ├── hooks/            # Custom hooks
+│   │   └── useUsageData.js
+│   ├── utils/            # Common utilities
+│   │   └── formatters.js
+│   ├── routes/           # Express routes
+│   │   ├── usage.js
+│   │   ├── logs.js
+│   │   └── health.js
+│   ├── services/         # Business logic
+│   │   ├── mcpService.js
+│   │   ├── todoService.js
+│   │   ├── vscodeService.js
+│   │   ├── projectService.js
+│   │   ├── pricingService.js
+│   │   └── cacheService.js
+│   ├── middleware/       # Express middleware
+│   │   └── errorHandler.js
+│   ├── config/          # Configuration
+│   │   └── paths.js
+│   ├── App.js           # Main React component
+│   └── index.js         # React entry point
+├── public/              # React public files
+├── build/               # React build output
+├── docs/                # Project documentation
+├── Dockerfile           # Production Docker config
+├── Dockerfile.dev       # Development Docker config
+└── docker-compose.yml   # Docker Compose config
+```
+
+## Development Setup
+
+### Prerequisites
+- Node.js 18+
+- Docker (optional but recommended)
+- npm
+
+### Local Development
+```bash
+# Install dependencies
+npm install
+
+# Development mode (full: server + client auto-reload)
+npm run dev
+
+# Development mode (server only)
+npm run dev:server
+
+# Build production
+npm run build
+
+# Production mode
+npm start
+```
+
+### Docker Development
+```bash
+# Production build and run
+docker build -t claude-usage-dashboard .
+docker run -d --name claude-dashboard \
+  -p 3001:3001 \
+  -v ~/.claude:/home/nodejs/.claude:ro \
+  -v ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro \
+  -v "$HOME/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro" \
+  claude-usage-dashboard
+
+# Development with Docker Compose
+docker-compose --profile dev up -d
+
+# Stop services
+docker-compose down
+```
+
+## Data Sources
+
+The application reads data from these Claude Code locations:
+- **MCP Logs**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
+- **Todo History**: `~/.claude/todos/`
+- **VS Code Extension**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
+
+## Key Components
+
+### Backend Services
+- **mcpService.js**: Processes MCP session logs
+- **todoService.js**: Handles todo file management data
+- **vscodeService.js**: Processes VS Code extension task data
+- **projectService.js**: Aggregates usage data by project/date/model
+- **pricingService.js**: Calculates costs based on Claude pricing
+- **cacheService.js**: In-memory caching for performance
+
+### Frontend Components
+- **Dashboard.js**: Main overview with summary cards and charts
+- **DataTable.js**: Reusable table component with sorting/formatting
+- **LogViewer.js**: Modal for viewing log file contents
+- **UsageChart.js**: Recharts-based visualization
+- **useUsageData.js**: Custom hook for data fetching
+
+### Security Features
+- Path traversal prevention in log content endpoint
+- Input validation and sanitization
+- Non-root Docker user execution
+- Read-only volume mounts
+- CORS configuration
+
+## API Endpoints
+
+- `GET /api/usage` - Complete usage data
+- `GET /api/health` - Health check
+- `GET /api/log-content/:type/:filename` - Log file content (secure)
+
+## Build & Deployment
+
+### Docker Specifications
+- **Base Image**: Node.js 18 Alpine Linux
+- **Security**: Non-root user (nodejs:1001)
+- **Port**: 3001
+- **Health Check**: `/api/health` endpoint
+- **Signal Handling**: dumb-init for proper process management
+
+### Volume Mounts
+```bash
+# Required volume mounts for data access
+-v ~/.claude:/home/nodejs/.claude:ro
+-v ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro
+-v "$HOME/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro"
+```
+
+## Development Guidelines
+
+### Coding Standards
+- Use modern JavaScript (ES6+)
+- Follow React functional component patterns
+- Implement proper error handling with custom error classes
+- Use meaningful variable and function names
+- Maintain consistent code formatting
+
+### CSS Architecture
+- Use BEM-like naming convention
+- Responsive design with mobile-first approach
+- CSS custom properties for theming
+- Component-scoped styles
+
+### Performance Considerations
+- Implement caching for expensive data operations
+- Use React.memo for component optimization
+- Lazy loading for large datasets
+- Efficient data processing in services
+
+## Testing
+
+### Current Test Coverage
+- Basic functionality tests needed
+- Integration tests for API endpoints
+- Component tests for React components
+
+### Testing Commands
+```bash
+# Run tests
+npm test
+
+# Test coverage
+npm run test:coverage
+```
+
+## Common Development Tasks
+
+### Adding New Data Source
+1. Create service file in `src/services/`
+2. Implement data processing logic
+3. Add route in `src/routes/usage.js`
+4. Update frontend components as needed
+
+### Modifying UI Components
+1. Update component in `src/components/`
+2. Update corresponding CSS in `src/App.css`
+3. Test responsive design
+4. Rebuild Docker image if needed
+
+### Performance Optimization
+1. Check caching implementation in services
+2. Optimize data processing algorithms
+3. Consider pagination for large datasets
+4. Monitor memory usage
+
+## Troubleshooting
+
+### Common Issues
+1. **CSS not updating in Docker**: Rebuild image after CSS changes
+2. **Volume mount issues**: Ensure correct path escaping for spaces
+3. **Permission errors**: Check file permissions on mounted volumes
+4. **Port conflicts**: Ensure port 3001 is available
+
+### Debug Commands
+```bash
+# Check container logs
+docker logs claude-dashboard
+
+# Check container health
+docker exec claude-dashboard ls -la /app/
+
+# Test API directly
+curl http://localhost:3001/api/health
+```
+
+## Security Notes
+
+- Application only reads local data, no external network access
+- Data is not stored or transmitted outside local environment
+- All file access is read-only
+- Path validation prevents directory traversal
+
+## Performance Notes
+
+- In-memory caching reduces file I/O
+- Data is processed once and cached
+- Efficient sorting and filtering algorithms
+- Responsive design minimizes data transfer
+
+---
+
+**Access the dashboard**: http://localhost:3001
+
+For detailed improvement suggestions, see `docs/improvement-suggestions.md`

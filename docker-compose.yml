@@ -1,0 +1,51 @@
+services:
+  claude-dashboard-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: claude-dashboard-prod
+    ports:
+      - "3001:3001"
+    volumes:
+      # Claude configuration (read-only)
+      - ~/.claude:/home/nodejs/.claude:ro
+      # MCP logs (read-only)
+      - ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro
+      # VS Code extension data (read-only)
+      - ~/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  claude-dashboard-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: claude-dashboard-dev
+    ports:
+      - "3001:3001"
+    volumes:
+      # Source code for hot reload
+      - .:/app
+      - /app/node_modules
+      # Claude configuration (read-only)
+      - ~/.claude:/home/nodejs/.claude:ro
+      # MCP logs (read-only)
+      - ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro
+      # VS Code extension data (read-only)
+      - ~/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - LOG_LEVEL=debug
+    profiles:
+      - dev
