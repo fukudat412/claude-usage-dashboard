@@ -3,8 +3,34 @@
  * Claude APIの使用量に基づく価格計算を統一管理
  */
 
+interface PricingRate {
+  input: number;
+  output: number;
+  cacheCreate: number;
+  cacheRead: number;
+}
+
+interface UsageData {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+interface TokenInfo {
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  totalTokens: number;
+}
+
+interface UsageMetrics extends TokenInfo {
+  cost: number;
+  model: string;
+}
+
 // モデル別価格設定（USD）
-const PRICING_RATES = {
+const PRICING_RATES: Record<string, PricingRate> = {
   // Claude 3.5 Sonnet（デフォルト）
   'claude-3-5-sonnet': {
     input: 0.000003,        // $3 per MTok
@@ -32,10 +58,8 @@ const PRICING_RATES = {
 
 /**
  * モデル名から価格レートを取得
- * @param {string} model - モデル名
- * @returns {object} 価格レート
  */
-function getPricingRates(model) {
+export function getPricingRates(model?: string): PricingRate {
   if (!model) {
     return PRICING_RATES['claude-3-5-sonnet']; // デフォルト
   }
@@ -54,11 +78,8 @@ function getPricingRates(model) {
 
 /**
  * 使用量データから価格を計算
- * @param {object} usage - 使用量データ
- * @param {string} model - モデル名
- * @returns {number} 計算された価格（USD）
  */
-function calculateCost(usage, model = 'claude-3-5-sonnet') {
+export function calculateCost(usage: UsageData, model: string = 'claude-3-5-sonnet'): number {
   const rates = getPricingRates(model);
   
   const inputTokens = usage.input_tokens || 0;
@@ -76,10 +97,8 @@ function calculateCost(usage, model = 'claude-3-5-sonnet') {
 
 /**
  * 使用量データから各種トークン数を計算
- * @param {object} usage - 使用量データ
- * @returns {object} トークン情報
  */
-function calculateTokens(usage) {
+export function calculateTokens(usage: UsageData): TokenInfo {
   const inputTokens = usage.input_tokens || 0;
   const outputTokens = usage.output_tokens || 0;
   const cacheCreateTokens = usage.cache_creation_input_tokens || 0;
@@ -95,11 +114,8 @@ function calculateTokens(usage) {
 
 /**
  * 価格とトークン情報をまとめて計算
- * @param {object} usage - 使用量データ
- * @param {string} model - モデル名
- * @returns {object} 価格とトークン情報
  */
-function calculateUsageMetrics(usage, model) {
+export function calculateUsageMetrics(usage: UsageData, model: string): UsageMetrics {
   const tokens = calculateTokens(usage);
   const cost = calculateCost(usage, model);
   
@@ -112,16 +128,7 @@ function calculateUsageMetrics(usage, model) {
 
 /**
  * 価格レート一覧を取得
- * @returns {object} 全価格レート
  */
-function getAllPricingRates() {
+export function getAllPricingRates(): Record<string, PricingRate> {
   return PRICING_RATES;
 }
-
-module.exports = {
-  calculateCost,
-  calculateTokens,
-  calculateUsageMetrics,
-  getPricingRates,
-  getAllPricingRates
-};

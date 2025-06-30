@@ -1,6 +1,7 @@
 import React from 'react';
+import { SummaryCardProps } from '../types';
 
-const SummaryCard = ({ title, value, subtitle, className = '' }) => {
+const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, subtitle, className = '' }) => {
   return (
     <div className={`summary-card ${className}`}>
       <h3>{title}</h3>

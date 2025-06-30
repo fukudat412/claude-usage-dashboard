@@ -1,16 +1,17 @@
-const fs = require('fs-extra');
-const path = require('path');
-const glob = require('glob');
-const { CLAUDE_PATHS } = require('../config/paths');
-const { AppError } = require('../middleware/errorHandler');
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as glob from 'glob';
+import { CLAUDE_PATHS } from '../config/paths';
+import { AppError } from '../middleware/errorHandler';
+import { McpLogEntry, McpToolUsageStats, McpToolUsage, McpSessionDetail } from '../types';
 
 /**
  * MCPログデータを取得
  */
-async function getMcpLogsData() {
+export async function getMcpLogsData(): Promise<McpLogEntry[]> {
   try {
     const logDirs = glob.sync(CLAUDE_PATHS.mcpLogs);
-    const logs = [];
+    const logs: McpLogEntry[] = [];
 
     for (const dir of logDirs) {
       if (await fs.pathExists(dir)) {
@@ -44,21 +45,41 @@ async function getMcpLogsData() {
       }
     }
 
-    return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   } catch (error) {
     console.error('Error reading MCP logs:', error);
     throw new AppError('Failed to read MCP logs', 500, 'MCP_READ_ERROR');
   }
 }
 
+interface LogEntry {
+  debug?: string;
+  sessionId?: string;
+  timestamp: string;
+  cwd?: string;
+}
+
+interface SessionToolsMap {
+  [sessionId: string]: McpSessionDetail;
+}
+
+interface ToolUsageMap {
+  [toolName: string]: {
+    count: number;
+    sessions: Set<string>;
+    firstUsed: string;
+    lastUsed: string;
+  };
+}
+
 /**
  * MCPツール使用統計を取得
  */
-async function getMcpToolUsageStats() {
+export async function getMcpToolUsageStats(): Promise<McpToolUsageStats> {
   try {
     const logDirs = glob.sync(CLAUDE_PATHS.mcpLogs);
-    const toolUsage = {};
-    const sessionDetails = [];
+    const toolUsage: ToolUsageMap = {};
+    const sessionDetails: McpSessionDetail[] = [];
     let totalCalls = 0;
 
     for (const dir of logDirs) {
@@ -70,7 +91,7 @@ async function getMcpToolUsageStats() {
           
           try {
             // ログファイルの内容を解析
-            let logEntries = [];
+            let logEntries: LogEntry[] = [];
             try {
               // まず全体をJSONとして解析を試みる
               const parsed = JSON.parse(content);
@@ -98,12 +119,11 @@ async function getMcpToolUsageStats() {
               }
             }
 
-            let currentSession = null;
-            const sessionTools = {};
+            let currentSession: string | null = null;
+            const sessionTools: SessionToolsMap = {};
 
             for (const entry of logEntries) {
               try {
-                
                 if (entry.debug && entry.debug.includes('Calling MCP tool:')) {
                   const toolMatch = entry.debug.match(/Calling MCP tool: (\w+)/);
                   if (toolMatch) {
@@ -163,22 +183,23 @@ async function getMcpToolUsageStats() {
     }
 
     // Setをカウントに変換
-    Object.keys(toolUsage).forEach(tool => {
-      toolUsage[tool].sessionCount = toolUsage[tool].sessions.size;
-      delete toolUsage[tool].sessions;
-    });
+    const sortedTools: McpToolUsage[] = Object.keys(toolUsage).map(tool => ({
+      name: tool,
+      count: toolUsage[tool].count,
+      sessionCount: toolUsage[tool].sessions.size,
+      firstUsed: toolUsage[tool].firstUsed,
+      lastUsed: toolUsage[tool].lastUsed
+    }));
 
     // 使用頻度でソート
-    const sortedTools = Object.entries(toolUsage)
-      .sort((a, b) => b[1].count - a[1].count)
-      .map(([name, data]) => ({ name, ...data }));
+    sortedTools.sort((a, b) => b.count - a.count);
 
     return {
       totalCalls,
       uniqueTools: Object.keys(toolUsage).length,
       tools: sortedTools,
       sessions: sessionDetails.sort((a, b) => 
-        new Date(b.startTime) - new Date(a.startTime)
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
       ).slice(0, 50) // 最新50セッション
     };
   } catch (error) {
@@ -186,8 +207,3 @@ async function getMcpToolUsageStats() {
     throw new AppError('Failed to read MCP tool usage', 500, 'MCP_USAGE_ERROR');
   }
 }
-
-module.exports = {
-  getMcpLogsData,
-  getMcpToolUsageStats
-};

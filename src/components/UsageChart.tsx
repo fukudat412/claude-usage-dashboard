@@ -3,9 +3,35 @@ import InteractiveChart from './charts/InteractiveChart';
 import FilterPanel from './FilterPanel';
 import { useChartData } from '../hooks/useChartData';
 
-const UsageChart = ({ data, viewMode, formatNumber, enableFilters = true }) => {
-  const [chartType, setChartType] = useState('area');
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+interface UsageDataPoint {
+  date: string;
+  month?: string;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens?: number;
+  cost: number;
+  sessions: number;
+  [key: string]: any;
+}
+
+interface UsageChartProps {
+  data: UsageDataPoint[];
+  viewMode: 'daily' | 'monthly';
+  formatNumber: (value: number) => string;
+  enableFilters?: boolean;
+}
+
+type ChartType = 'area' | 'line' | 'bar' | 'scatter' | 'pie';
+
+const UsageChart: React.FC<UsageChartProps> = ({ 
+  data, 
+  viewMode, 
+  formatNumber, 
+  enableFilters = true 
+}) => {
+  const [chartType, setChartType] = useState<ChartType>('area');
+  const [filtersCollapsed, setFiltersCollapsed] = useState<boolean>(false);
 
   const {
     data: filteredData,
@@ -27,7 +53,7 @@ const UsageChart = ({ data, viewMode, formatNumber, enableFilters = true }) => {
     }
   });
 
-  const handleDataPointClick = (dataPoint) => {
+  const handleDataPointClick = (dataPoint: any): void => {
     console.log('Data point clicked:', dataPoint);
     // 詳細ページへの遷移やモーダル表示などの処理
   };
@@ -60,7 +86,7 @@ const UsageChart = ({ data, viewMode, formatNumber, enableFilters = true }) => {
           <select
             id="chart-type"
             value={chartType}
-            onChange={(e) => setChartType(e.target.value)}
+            onChange={(e) => setChartType(e.target.value as ChartType)}
           >
             <option value="area">エリアチャート</option>
             <option value="line">ラインチャート</option>

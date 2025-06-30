@@ -1,8 +1,75 @@
 import { useState, useMemo, useEffect } from 'react';
 import { startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
 import { debounce } from 'lodash';
+import { ChartDataPoint } from '../types';
 
-export function useChartData(rawData, options = {}) {
+interface UseChartDataOptions {
+  initialDateRange?: { start: string; end: string } | null;
+  initialMetrics?: string[];
+  enableRealTimeUpdates?: boolean;
+  updateInterval?: number;
+  filterThresholds?: {
+    minCost?: number;
+    minTokens?: number;
+    maxCost?: number;
+    maxTokens?: number;
+  };
+  onDataRefresh?: () => void;
+}
+
+interface ChartFilters {
+  minCost: number;
+  minTokens: number;
+  maxCost: number;
+  maxTokens: number;
+}
+
+interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
+interface DateRange {
+  start: string;
+  end: string;
+}
+
+interface ChartStatistics {
+  totalItems: number;
+  totalCost: number;
+  totalTokens: number;
+  avgCost: number;
+  avgTokens: number;
+  maxCost: number;
+  maxTokens: number;
+  dateRange: { start: number; end: number } | null;
+}
+
+interface UseChartDataReturn {
+  data: ChartDataPoint[];
+  chartData: ChartDataPoint[];
+  statistics: ChartStatistics;
+  dateRange: DateRange | null;
+  selectedMetrics: string[];
+  searchText: string;
+  sortConfig: SortConfig;
+  filters: ChartFilters;
+  updateDateRange: (start: string, end: string) => void;
+  clearDateRange: () => void;
+  updateFilters: (newFilters: Partial<ChartFilters>) => void;
+  clearFilters: () => void;
+  updateSort: (key: string, direction: 'asc' | 'desc') => void;
+  toggleMetric: (metric: string) => void;
+  setSearchText: (text: string) => void;
+  hasActiveFilters: boolean;
+  isEmpty: boolean;
+  isFiltered: boolean;
+}
+
+export function useChartData(
+  rawData: ChartDataPoint[] | null, 
+  options: UseChartDataOptions = {}
+): UseChartDataReturn {
   const {
     initialDateRange = null,
     initialMetrics = ['totalTokens'],
@@ -11,11 +78,11 @@ export function useChartData(rawData, options = {}) {
     filterThresholds = {}
   } = options;
 
-  const [dateRange, setDateRange] = useState(initialDateRange);
-  const [selectedMetrics, setSelectedMetrics] = useState(initialMetrics);
-  const [searchText, setSearchText] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
-  const [filters, setFilters] = useState({
+  const [dateRange, setDateRange] = useState<DateRange | null>(initialDateRange);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(initialMetrics);
+  const [searchText, setSearchText] = useState<string>('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'desc' });
+  const [filters, setFilters] = useState<ChartFilters>({
     minCost: filterThresholds.minCost || 0,
     minTokens: filterThresholds.minTokens || 0,
     maxCost: filterThresholds.maxCost || Infinity,
@@ -37,7 +104,7 @@ export function useChartData(rawData, options = {}) {
   }, [enableRealTimeUpdates, updateInterval, options]);
 
   // フィルタリングされたデータ
-  const filteredData = useMemo(() => {
+  const filteredData = useMemo((): ChartDataPoint[] => {
     if (!rawData || !Array.isArray(rawData)) return [];
 
     let filtered = [...rawData];
@@ -46,13 +113,13 @@ export function useChartData(rawData, options = {}) {
     if (dateRange?.start && dateRange?.end) {
       filtered = filtered.filter(item => {
         try {
-          const itemDate = parseISO(item.date || item.month);
+          const itemDate = parseISO(item.date);
           return isWithinInterval(itemDate, {
             start: startOfDay(parseISO(dateRange.start)),
             end: endOfDay(parseISO(dateRange.end))
           });
         } catch (error) {
-          console.warn('Invalid date format:', item.date || item.month);
+          console.warn('Invalid date format:', item.date);
           return true;
         }
       });
@@ -61,7 +128,7 @@ export function useChartData(rawData, options = {}) {
     // 数値フィルタ
     filtered = filtered.filter(item => {
       const cost = Number(item.cost || 0);
-      const tokens = Number(item.totalTokens || 0);
+      const tokens = Number(item.tokens || 0);
       
       return cost >= filters.minCost &&
              cost <= filters.maxCost &&
@@ -75,9 +142,7 @@ export function useChartData(rawData, options = {}) {
       filtered = filtered.filter(item => {
         const searchableText = [
           item.date,
-          item.month,
-          item.sessionId,
-          item.project
+          item.label
         ].filter(Boolean).join(' ').toLowerCase();
         
         return searchableText.includes(searchLower);
@@ -88,12 +153,12 @@ export function useChartData(rawData, options = {}) {
   }, [rawData, dateRange, filters, searchText]);
 
   // ソートされたデータ
-  const sortedData = useMemo(() => {
+  const sortedData = useMemo((): ChartDataPoint[] => {
     if (!filteredData.length) return [];
 
     return [...filteredData].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      const aValue = (a as any)[sortConfig.key];
+      const bValue = (b as any)[sortConfig.key];
 
       if (aValue === bValue) return 0;
 
@@ -109,7 +174,7 @@ export function useChartData(rawData, options = {}) {
   }, [filteredData, sortConfig]);
 
   // 統計データ
-  const statistics = useMemo(() => {
+  const statistics = useMemo((): ChartStatistics => {
     if (!sortedData.length) {
       return {
         totalItems: 0,
@@ -124,8 +189,8 @@ export function useChartData(rawData, options = {}) {
     }
 
     const costs = sortedData.map(item => Number(item.cost || 0));
-    const tokens = sortedData.map(item => Number(item.totalTokens || 0));
-    const dates = sortedData.map(item => item.date || item.month).filter(Boolean);
+    const tokens = sortedData.map(item => Number(item.tokens || 0));
+    const dates = sortedData.map(item => item.date).filter(Boolean);
 
     return {
       totalItems: sortedData.length,
@@ -144,24 +209,24 @@ export function useChartData(rawData, options = {}) {
 
   // デバウンス機能付きの検索更新
   const debouncedSetSearchText = useMemo(
-    () => debounce((text) => setSearchText(text), 300),
+    () => debounce((text: string) => setSearchText(text), 300),
     []
   );
 
   // ユーティリティ関数
-  const updateDateRange = (start, end) => {
+  const updateDateRange = (start: string, end: string): void => {
     setDateRange({ start, end });
   };
 
-  const clearDateRange = () => {
+  const clearDateRange = (): void => {
     setDateRange(null);
   };
 
-  const updateFilters = (newFilters) => {
+  const updateFilters = (newFilters: Partial<ChartFilters>): void => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  const clearFilters = () => {
+  const clearFilters = (): void => {
     setFilters({
       minCost: 0,
       minTokens: 0,
@@ -172,11 +237,11 @@ export function useChartData(rawData, options = {}) {
     setDateRange(null);
   };
 
-  const updateSort = (key, direction) => {
+  const updateSort = (key: string, direction: 'asc' | 'desc'): void => {
     setSortConfig({ key, direction });
   };
 
-  const toggleMetric = (metric) => {
+  const toggleMetric = (metric: string): void => {
     setSelectedMetrics(prev => {
       if (prev.includes(metric)) {
         return prev.filter(m => m !== metric);
@@ -187,14 +252,14 @@ export function useChartData(rawData, options = {}) {
   };
 
   // データをチャート用にフォーマット
-  const chartData = useMemo(() => {
+  const chartData = useMemo((): ChartDataPoint[] => {
     return sortedData.map(item => ({
       ...item,
       // 選択されたメトリクスのみを含める
       ...selectedMetrics.reduce((acc, metric) => {
-        acc[metric] = item[metric];
+        (acc as any)[metric] = (item as any)[metric];
         return acc;
-      }, {})
+      }, {} as any)
     }));
   }, [sortedData, selectedMetrics]);
 

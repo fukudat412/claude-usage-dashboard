@@ -15,7 +15,43 @@ import {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B', '#4ECDC4', '#45B7D1'];
 
-const McpToolUsage = ({ mcpToolUsage }) => {
+interface Tool {
+  name: string;
+  count: number;
+  sessionCount: number;
+  firstUsed: string;
+  lastUsed: string;
+}
+
+interface Session {
+  startTime: string;
+  tools: Record<string, number>;
+  cwd: string;
+}
+
+interface McpToolUsageData {
+  totalCalls: number;
+  uniqueTools: number;
+  tools: Tool[];
+  sessions: Session[];
+}
+
+interface McpToolUsageProps {
+  mcpToolUsage: McpToolUsageData | null;
+}
+
+interface TopToolData {
+  name: string;
+  使用回数: number;
+  セッション数: number;
+}
+
+interface PieDataEntry {
+  name: string;
+  value: number;
+}
+
+const McpToolUsage: React.FC<McpToolUsageProps> = ({ mcpToolUsage }) => {
   if (!mcpToolUsage || !mcpToolUsage.tools) {
     return <div className="mcp-tool-usage">MCPツール使用データがありません</div>;
   }
@@ -23,14 +59,14 @@ const McpToolUsage = ({ mcpToolUsage }) => {
   const { totalCalls, uniqueTools, tools, sessions } = mcpToolUsage;
 
   // 上位10ツールのデータ準備
-  const topTools = tools.slice(0, 10).map(tool => ({
+  const topTools: TopToolData[] = tools.slice(0, 10).map(tool => ({
     name: tool.name,
     使用回数: tool.count,
     セッション数: tool.sessionCount
   }));
 
   // 円グラフ用データ（上位5ツール + その他）
-  const pieData = tools.slice(0, 5).map(tool => ({
+  const pieData: PieDataEntry[] = tools.slice(0, 5).map(tool => ({
     name: tool.name,
     value: tool.count
   }));
@@ -94,7 +130,7 @@ const McpToolUsage = ({ mcpToolUsage }) => {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"

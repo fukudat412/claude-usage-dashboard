@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
-import DataTable from './components/DataTable';
+import DataTable, { TableColumn } from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
 import SessionManager from './components/SessionManager';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
+import { McpLogEntry } from './types';
 
-function App() {
+type TabType = 'summary' | 'mcp' | 'todos' | 'vscode' | 'daily' | 'monthly' | 'models' | 'projects' | 'mcpTools' | 'sessions';
+type ViewMode = 'daily' | 'monthly';
+
+const App: React.FC = () => {
   const { usageData, loading, error, refetch } = useUsageData();
-  const [activeTab, setActiveTab] = useState('summary');
-  const [selectedLog, setSelectedLog] = useState(null);
-  const [viewMode, setViewMode] = useState('daily');
+  const [activeTab, setActiveTab] = useState<TabType>('summary');
+  const [selectedLog, setSelectedLog] = useState<McpLogEntry | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('daily');
 
   if (loading) {
     return (
@@ -38,7 +42,7 @@ function App() {
   }
 
   // テーブル列定義
-  const mcpColumns = [
+  const mcpColumns: TableColumn[] = [
     { key: 'file', title: 'ファイル名', type: 'text' },
     { key: 'size', title: 'サイズ', type: 'bytes' },
     { key: 'entries', title: 'エントリ数', type: 'number' },
@@ -46,21 +50,21 @@ function App() {
     { key: 'sessionId', title: 'セッションID', type: 'text' }
   ];
 
-  const todoColumns = [
+  const todoColumns: TableColumn[] = [
     { key: 'file', title: 'ファイル名', type: 'text' },
     { key: 'size', title: 'サイズ', type: 'bytes' },
     { key: 'taskCount', title: 'タスク数', type: 'number' },
     { key: 'timestamp', title: '更新日時', type: 'date' }
   ];
 
-  const vscodeColumns = [
+  const vscodeColumns: TableColumn[] = [
     { key: 'taskId', title: 'タスクID', type: 'text' },
     { key: 'messageCount', title: 'メッセージ数', type: 'number' },
     { key: 'conversationCount', title: '会話数', type: 'number' },
     { key: 'timestamp', title: '更新日時', type: 'date' }
   ];
 
-  const dailyColumns = [
+  const dailyColumns: TableColumn[] = [
     { key: 'date', title: '日付', type: 'text' },
     { key: 'totalTokens', title: '総トークン数', type: 'number' },
     { key: 'inputTokens', title: '入力トークン', type: 'number' },
@@ -70,7 +74,7 @@ function App() {
     { key: 'sessions', title: 'セッション数', type: 'number' }
   ];
 
-  const monthlyColumns = [
+  const monthlyColumns: TableColumn[] = [
     { key: 'month', title: '月', type: 'text' },
     { key: 'totalTokens', title: '総トークン数', type: 'number' },
     { key: 'inputTokens', title: '入力トークン', type: 'number' },
@@ -81,7 +85,7 @@ function App() {
     { key: 'messages', title: 'メッセージ数', type: 'number' }
   ];
 
-  const modelColumns = [
+  const modelColumns: TableColumn[] = [
     { key: 'model', title: 'モデル', type: 'text' },
     { key: 'totalTokens', title: '総トークン数', type: 'number' },
     { key: 'inputTokens', title: '入力トークン', type: 'number' },
@@ -92,7 +96,7 @@ function App() {
     { key: 'messages', title: 'メッセージ数', type: 'number' }
   ];
 
-  const projectColumns = [
+  const projectColumns: TableColumn[] = [
     { key: 'name', title: 'プロジェクト名', type: 'text' },
     { key: 'totalTokens', title: '総トークン数', type: 'number' },
     { key: 'totalCost', title: '総コスト', type: 'currency' },
@@ -100,15 +104,15 @@ function App() {
     { key: 'lastActivity', title: '最終アクティビティ', type: 'date' }
   ];
 
-  const handleLogClick = (log) => {
-    setSelectedLog(log);
+  const handleLogClick = (row: Record<string, any>): void => {
+    setSelectedLog(row as McpLogEntry);
   };
 
-  const closeLogViewer = () => {
+  const closeLogViewer = (): void => {
     setSelectedLog(null);
   };
 
-  const renderTabContent = () => {
+  const renderTabContent = (): React.ReactNode => {
     if (!usageData) return null;
 
     switch (activeTab) {
@@ -129,7 +133,7 @@ function App() {
           <div className="tab-content">
             <h2>MCPログ</h2>
             <DataTable
-              data={usageData.mcpLogs}
+              data={usageData.mcpLogs || []}
               columns={mcpColumns}
               onRowClick={handleLogClick}
               formatDate={formatDate}
@@ -144,7 +148,7 @@ function App() {
           <div className="tab-content">
             <h2>Todo履歴</h2>
             <DataTable
-              data={usageData.todos}
+              data={usageData.todos || []}
               columns={todoColumns}
               onRowClick={handleLogClick}
               formatDate={formatDate}
@@ -159,8 +163,9 @@ function App() {
           <div className="tab-content">
             <h2>VS Code拡張</h2>
             <DataTable
-              data={usageData.vsCodeLogs}
+              data={usageData.vsCodeLogs || []}
               columns={vscodeColumns}
+              onRowClick={() => {}}
               formatDate={formatDate}
               formatBytes={formatBytes}
               formatNumber={formatNumber}
@@ -173,8 +178,9 @@ function App() {
           <div className="tab-content">
             <h2>日別使用量</h2>
             <DataTable
-              data={usageData.dailyUsage}
+              data={usageData.daily || []}
               columns={dailyColumns}
+              onRowClick={() => {}}
               formatDate={formatDate}
               formatBytes={formatBytes}
               formatNumber={formatNumber}
@@ -187,8 +193,9 @@ function App() {
           <div className="tab-content">
             <h2>月別使用量</h2>
             <DataTable
-              data={usageData.monthlyUsage}
+              data={usageData.monthly || []}
               columns={monthlyColumns}
+              onRowClick={() => {}}
               formatDate={formatDate}
               formatBytes={formatBytes}
               formatNumber={formatNumber}
@@ -201,8 +208,9 @@ function App() {
           <div className="tab-content">
             <h2>モデル別使用量</h2>
             <DataTable
-              data={usageData.modelUsage}
+              data={(usageData as any).modelUsage || []}
               columns={modelColumns}
+              onRowClick={() => {}}
               formatDate={formatDate}
               formatBytes={formatBytes}
               formatNumber={formatNumber}
@@ -215,8 +223,9 @@ function App() {
           <div className="tab-content">
             <h2>プロジェクト別使用量</h2>
             <DataTable
-              data={usageData.projects}
+              data={(usageData as any).projects || []}
               columns={projectColumns}
+              onRowClick={() => {}}
               formatDate={formatDate}
               formatBytes={formatBytes}
               formatNumber={formatNumber}
@@ -227,7 +236,7 @@ function App() {
       case 'mcpTools':
         return (
           <div className="tab-content">
-            <McpToolUsage mcpToolUsage={usageData.mcpToolUsage} />
+            <McpToolUsage mcpToolUsage={(usageData as any).mcpToolUsage} />
           </div>
         );
 
@@ -328,6 +337,6 @@ function App() {
       )}
     </div>
   );
-}
+};
 
 export default App;

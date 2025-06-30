@@ -2,13 +2,18 @@
  * 統一エラーハンドリングミドルウェア
  */
 
-const { APP_CONFIG } = require('../config/paths');
+import { Request, Response, NextFunction } from 'express';
+import { APP_CONFIG } from '../config/paths';
 
 /**
  * カスタムエラークラス
  */
-class AppError extends Error {
-  constructor(message, statusCode, code = null) {
+export class AppError extends Error {
+  statusCode: number;
+  code?: string;
+  isOperational: boolean;
+
+  constructor(message: string, statusCode: number, code?: string) {
     super(message);
     this.name = 'AppError';
     this.statusCode = statusCode;
@@ -22,8 +27,8 @@ class AppError extends Error {
 /**
  * 非同期エラーハンドリングラッパー
  */
-const asyncHandler = (fn) => {
-  return (req, res, next) => {
+export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
@@ -31,7 +36,7 @@ const asyncHandler = (fn) => {
 /**
  * 404エラーハンドラー
  */
-const notFound = (req, res, next) => {
+export const notFound = (req: Request, res: Response, next: NextFunction): void => {
   const error = new AppError(`Not Found - ${req.originalUrl}`, 404, 'NOT_FOUND');
   next(error);
 };
@@ -39,7 +44,7 @@ const notFound = (req, res, next) => {
 /**
  * グローバルエラーハンドラー
  */
-const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
   let error = { ...err };
   error.message = err.message;
 
@@ -70,7 +75,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // エラーレスポンス
-  const response = {
+  const response: any = {
     error: error.message,
     code: error.code || 'UNKNOWN_ERROR',
     timestamp: new Date().toISOString()
@@ -87,7 +92,7 @@ const errorHandler = (err, req, res, next) => {
 /**
  * セキュリティバリデーション
  */
-const validateFilePath = (filePath) => {
+export const validateFilePath = (filePath: string): boolean => {
   if (!filePath || typeof filePath !== 'string') {
     throw new AppError('Valid file path is required', 400, 'INVALID_FILE_PATH');
   }
@@ -98,12 +103,4 @@ const validateFilePath = (filePath) => {
   }
 
   return true;
-};
-
-module.exports = {
-  AppError,
-  asyncHandler,
-  notFound,
-  errorHandler,
-  validateFilePath
 };

@@ -22,9 +22,49 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { ChartDataPoint } from '../../types';
 import './InteractiveChart.css';
 
-const InteractiveChart = ({
+interface ProcessedDataPoint extends ChartDataPoint {
+  displayDate: string;
+  formattedDate: string;
+}
+
+interface Metric {
+  key: string;
+  name: string;
+  color: string;
+}
+
+interface PieDataEntry {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface InteractiveChartProps {
+  data: ChartDataPoint[];
+  chartType?: 'area' | 'line' | 'bar' | 'scatter' | 'pie';
+  viewMode?: 'daily' | 'monthly';
+  formatNumber: (value: number) => string;
+  onDataPointClick?: (data: any) => void;
+  title?: string;
+  enableExport?: boolean;
+  enableDrillDown?: boolean;
+  showControls?: boolean;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
+
+interface SelectedDataPoint extends ProcessedDataPoint {
+  index: number;
+}
+
+const InteractiveChart: React.FC<InteractiveChartProps> = ({
   data,
   chartType = 'area',
   viewMode = 'daily',
@@ -35,13 +75,13 @@ const InteractiveChart = ({
   enableDrillDown = true,
   showControls = true
 }) => {
-  const [hoveredData, setHoveredData] = useState(null);
-  const [selectedMetric, setSelectedMetric] = useState('totalTokens');
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedDataPoint, setSelectedDataPoint] = useState(null);
-  const chartRef = useRef(null);
+  const [hoveredData, setHoveredData] = useState<ProcessedDataPoint | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<string>('totalTokens');
+  const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
+  const [selectedDataPoint, setSelectedDataPoint] = useState<SelectedDataPoint | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
-  const metrics = [
+  const metrics: Metric[] = [
     { key: 'totalTokens', name: '総トークン数', color: '#8884d8' },
     { key: 'inputTokens', name: '入力トークン', color: '#82ca9d' },
     { key: 'outputTokens', name: '出力トークン', color: '#ffc658' },
@@ -49,26 +89,26 @@ const InteractiveChart = ({
     { key: 'sessions', name: 'セッション数', color: '#00c49f' }
   ];
 
-  const chartData = data?.map(item => ({
+  const chartData: ProcessedDataPoint[] = data?.map(item => ({
     ...item,
-    date: viewMode === 'daily' ? item.date : item.month,
+    date: viewMode === 'daily' ? item.date : item.month || item.date,
     displayDate: viewMode === 'daily' 
       ? format(parseISO(item.date), 'M/d', { locale: ja })
-      : item.month,
+      : item.month || item.date,
     formattedDate: viewMode === 'daily'
       ? format(parseISO(item.date), 'yyyy年M月d日', { locale: ja })
-      : `${item.month.replace('-', '年')}月`
+      : `${(item.month || item.date).replace('-', '年')}月`
   })) || [];
 
-  const handleDataPointClick = useCallback((data, index) => {
+  const handleDataPointClick = useCallback((data: ProcessedDataPoint, index?: number) => {
     if (enableDrillDown) {
-      setSelectedDataPoint({ ...data, index });
+      setSelectedDataPoint({ ...data, index: index || 0 });
       setShowDetailModal(true);
       onDataPointClick?.(data);
     }
   }, [enableDrillDown, onDataPointClick]);
 
-  const handleMouseEnter = useCallback((data) => {
+  const handleMouseEnter = useCallback((data: ProcessedDataPoint) => {
     setHoveredData(data);
   }, []);
 
@@ -76,7 +116,7 @@ const InteractiveChart = ({
     setHoveredData(null);
   }, []);
 
-  const exportChart = useCallback(async (format) => {
+  const exportChart = useCallback(async (format: 'png' | 'pdf') => {
     if (!chartRef.current) return;
 
     try {
@@ -104,7 +144,7 @@ const InteractiveChart = ({
     }
   }, []);
 
-  const customTooltip = ({ active, payload, label }) => {
+  const customTooltip = ({ active, payload, label }: TooltipProps) => {
     if (!active || !payload || payload.length === 0) return null;
 
     return (
@@ -136,10 +176,7 @@ const InteractiveChart = ({
 
   const renderChart = () => {
     const commonProps = {
-      data: chartData,
-      onMouseEnter: handleMouseEnter,
-      onMouseLeave: handleMouseLeave,
-      onClick: handleDataPointClick
+      data: chartData
     };
 
     switch (chartType) {
@@ -156,7 +193,10 @@ const InteractiveChart = ({
               tick={{ fontSize: 12 }}
               tickFormatter={formatNumber}
             />
-            <Tooltip content={customTooltip} />
+            <Tooltip 
+              content={customTooltip}
+              cursor={{ strokeDasharray: '3 3' }}
+            />
             <Legend />
             {metrics.map(metric => (
               <Line
@@ -168,6 +208,7 @@ const InteractiveChart = ({
                 dot={{ r: selectedMetric === metric.key ? 5 : 3 }}
                 name={metric.name}
                 connectNulls={false}
+                onClick={(data: any) => handleDataPointClick(data.payload)}
               />
             ))}
           </LineChart>
@@ -186,7 +227,10 @@ const InteractiveChart = ({
               tick={{ fontSize: 12 }}
               tickFormatter={formatNumber}
             />
-            <Tooltip content={customTooltip} />
+            <Tooltip 
+              content={customTooltip}
+              cursor={{ strokeDasharray: '3 3' }}
+            />
             <Legend />
             {metrics.map(metric => (
               <Bar
@@ -195,6 +239,7 @@ const InteractiveChart = ({
                 fill={metric.color}
                 name={metric.name}
                 opacity={selectedMetric === metric.key ? 1 : 0.7}
+                onClick={(data: any) => handleDataPointClick(data.payload)}
               />
             ))}
           </BarChart>
@@ -218,20 +263,24 @@ const InteractiveChart = ({
               tick={{ fontSize: 12 }}
               tickFormatter={formatNumber}
             />
-            <Tooltip content={customTooltip} />
+            <Tooltip 
+              content={customTooltip}
+              cursor={{ strokeDasharray: '3 3' }}
+            />
             <Legend />
             <Scatter 
               dataKey="totalTokens"
               fill="#8884d8"
               name="総トークン数"
+              onClick={(data: any) => handleDataPointClick(data.payload)}
             />
           </ScatterChart>
         );
 
       case 'pie':
-        const pieData = chartData.slice(-5).map((item, index) => ({
+        const pieData: PieDataEntry[] = chartData.slice(-5).map((item, index) => ({
           name: item.displayDate,
-          value: item[selectedMetric],
+          value: item[selectedMetric as keyof ProcessedDataPoint] as number,
           color: `hsl(${index * 72}, 70%, 50%)`
         }));
 
@@ -243,13 +292,16 @@ const InteractiveChart = ({
               cy="50%"
               outerRadius={120}
               dataKey="value"
-              onClick={handleDataPointClick}
+              onClick={(data: any) => handleDataPointClick(data.payload)}
             >
               {pieData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={customTooltip} />
+            <Tooltip 
+              content={customTooltip}
+              cursor={{ strokeDasharray: '3 3' }}
+            />
             <Legend />
           </PieChart>
         );
@@ -267,7 +319,10 @@ const InteractiveChart = ({
               tick={{ fontSize: 12 }}
               tickFormatter={formatNumber}
             />
-            <Tooltip content={customTooltip} />
+            <Tooltip 
+              content={customTooltip}
+              cursor={{ strokeDasharray: '3 3' }}
+            />
             <Legend />
             {metrics.map((metric, index) => (
               <Area
@@ -279,6 +334,7 @@ const InteractiveChart = ({
                 fill={metric.color}
                 fillOpacity={selectedMetric === metric.key ? 0.8 : 0.3}
                 name={metric.name}
+                onClick={(data: any) => handleDataPointClick(data.payload)}
               />
             ))}
           </AreaChart>
@@ -309,20 +365,6 @@ const InteractiveChart = ({
           </div>
           
           <div className="chart-options">
-            <div className="chart-type-selector">
-              <label>チャート種類:</label>
-              <select 
-                value={chartType} 
-                onChange={(e) => setSelectedMetric(e.target.value)}
-              >
-                <option value="area">エリアチャート</option>
-                <option value="line">ラインチャート</option>
-                <option value="bar">バーチャート</option>
-                <option value="scatter">散布図</option>
-                <option value="pie">円グラフ</option>
-              </select>
-            </div>
-            
             <div className="metric-selector">
               <label>メトリック:</label>
               <select 

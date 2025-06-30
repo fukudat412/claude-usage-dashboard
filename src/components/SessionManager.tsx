@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../hooks/useSocket';
+import { SessionInfo } from '../types';
 import '../styles/SessionManager.css';
 
-function SessionManager() {
+interface SessionMetadata {
+  source?: string;
+  userAgent?: string;
+  priority?: string;
+  createdFrom?: string;
+}
+
+interface StatusInfo {
+  label: string;
+  className: string;
+}
+
+const SessionManager: React.FC = () => {
   const {
     connected,
     sessions,
@@ -12,9 +25,9 @@ function SessionManager() {
     respondToSubsession
   } = useSocket();
 
-  const [mainSessionId, setMainSessionId] = useState(null);
-  const [newTask, setNewTask] = useState('');
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [mainSessionId, setMainSessionId] = useState<string | null>(null);
+  const [newTask, setNewTask] = useState<string>('');
+  const [selectedSession, setSelectedSession] = useState<SessionInfo | null>(null);
 
   useEffect(() => {
     if (connected && !mainSessionId) {
@@ -27,7 +40,7 @@ function SessionManager() {
     }
   }, [connected, mainSessionId, registerSession]);
 
-  const handleCreateSubsession = () => {
+  const handleCreateSubsession = (): void => {
     if (newTask.trim() && mainSessionId) {
       requestSubsession(mainSessionId, newTask, {
         priority: 'normal',
@@ -37,12 +50,12 @@ function SessionManager() {
     }
   };
 
-  const handleSessionClick = (session) => {
+  const handleSessionClick = (session: SessionInfo): void => {
     setSelectedSession(session);
   };
 
-  const getSessionStatus = (status) => {
-    const statusMap = {
+  const getSessionStatus = (status: string): StatusInfo => {
+    const statusMap: Record<string, StatusInfo> = {
       active: { label: 'アクティブ', className: 'status-active' },
       pending: { label: '保留中', className: 'status-pending' },
       completed: { label: '完了', className: 'status-completed' },
@@ -164,6 +177,6 @@ function SessionManager() {
       )}
     </div>
   );
-}
+};
 
 export default SessionManager;

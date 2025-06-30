@@ -2,7 +2,45 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import './FilterPanel.css';
 
-const FilterPanel = ({
+interface DateRange {
+  start: string;
+  end: string;
+}
+
+interface Filters {
+  minCost: number;
+  maxCost: number;
+  minTokens: number;
+  maxTokens: number;
+}
+
+interface Statistics {
+  totalItems: number;
+  totalCost: number;
+  totalTokens: number;
+  avgCost: number;
+}
+
+interface FilterPanelProps {
+  dateRange: DateRange | null;
+  onDateRangeChange: (start: string, end: string) => void;
+  filters: Filters;
+  onFiltersChange: (filters: Partial<Filters>) => void;
+  searchText: string;
+  onSearchChange: (text: string) => void;
+  onClearFilters: () => void;
+  hasActiveFilters: boolean;
+  statistics: Statistics;
+  isCollapsed?: boolean;
+  onToggleCollapse: () => void;
+}
+
+interface LocalDateRange {
+  start: string;
+  end: string;
+}
+
+const FilterPanel: React.FC<FilterPanelProps> = ({
   dateRange,
   onDateRangeChange,
   filters,
@@ -15,12 +53,12 @@ const FilterPanel = ({
   isCollapsed = false,
   onToggleCollapse
 }) => {
-  const [localDateRange, setLocalDateRange] = useState({
+  const [localDateRange, setLocalDateRange] = useState<LocalDateRange>({
     start: dateRange?.start || '',
     end: dateRange?.end || ''
   });
 
-  const handleDateChange = (field, value) => {
+  const handleDateChange = (field: keyof LocalDateRange, value: string): void => {
     const newRange = { ...localDateRange, [field]: value };
     setLocalDateRange(newRange);
     
@@ -29,13 +67,13 @@ const FilterPanel = ({
     }
   };
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (key: keyof Filters, value: string): void => {
     const numericValue = value === '' ? (key.includes('max') ? Infinity : 0) : Number(value);
     onFiltersChange({ [key]: numericValue });
   };
 
-  const getFilterSummary = () => {
-    const activeFilters = [];
+  const getFilterSummary = (): string[] => {
+    const activeFilters: string[] = [];
     
     if (dateRange) {
       activeFilters.push(`期間: ${format(new Date(dateRange.start), 'M/d')} - ${format(new Date(dateRange.end), 'M/d')}`);
