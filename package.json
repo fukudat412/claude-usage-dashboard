@@ -32,7 +32,11 @@
     "@testing-library/user-event": "^14.5.2",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
-    "helmet": "^7.1.0"
+    "helmet": "^7.1.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "lodash": "^4.17.21",
+    "date-fns": "^2.30.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",

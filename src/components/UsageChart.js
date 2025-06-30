@@ -1,56 +1,119 @@
-import React from 'react';
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import React, { useState } from 'react';
+import InteractiveChart from './charts/InteractiveChart';
+import FilterPanel from './FilterPanel';
+import { useChartData } from '../hooks/useChartData';
 
-const UsageChart = ({ data, viewMode, formatNumber }) => {
+const UsageChart = ({ data, viewMode, formatNumber, enableFilters = true }) => {
+  const [chartType, setChartType] = useState('area');
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+
+  const {
+    data: filteredData,
+    chartData,
+    statistics,
+    dateRange,
+    filters,
+    searchText,
+    hasActiveFilters,
+    updateDateRange,
+    updateFilters,
+    setSearchText,
+    clearFilters
+  } = useChartData(data, {
+    enableRealTimeUpdates: false,
+    filterThresholds: {
+      minCost: 0,
+      minTokens: 0
+    }
+  });
+
+  const handleDataPointClick = (dataPoint) => {
+    console.log('Data point clicked:', dataPoint);
+    // 詳細ページへの遷移やモーダル表示などの処理
+  };
+
   if (!data || data.length === 0) {
     return <div className="no-data">表示するデータがありません</div>;
   }
 
-  const chartData = data.map(item => ({
-    ...item,
-    date: viewMode === 'daily' ? item.date : item.month,
-    displayDate: viewMode === 'daily' 
-      ? new Date(item.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
-      : item.month
-  }));
-
   return (
-    <div className="chart-container">
-      <h3>{viewMode === 'daily' ? '日別使用量' : '月別使用量'}</h3>
-      <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="displayDate"
-            tick={{ fontSize: 12 }}
-            interval={viewMode === 'daily' ? 'preserveStartEnd' : 0}
-          />
-          <YAxis 
-            tick={{ fontSize: 12 }}
-            tickFormatter={formatNumber}
-          />
-          <Tooltip 
-            formatter={(value, name) => [formatNumber(value), name]}
-            labelFormatter={(label) => `日付: ${label}`}
-          />
-          <Legend />
-          <Area 
-            type="monotone" 
-            dataKey="totalTokens" 
-            stackId="1"
-            stroke="#8884d8" 
-            fill="#8884d8" 
-            name="総トークン数"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="cost" 
-            stroke="#82ca9d" 
-            name="コスト ($)"
-            dot={{ r: 3 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="usage-chart-container">
+      {enableFilters && (
+        <FilterPanel
+          dateRange={dateRange}
+          onDateRangeChange={updateDateRange}
+          filters={filters}
+          onFiltersChange={updateFilters}
+          searchText={searchText}
+          onSearchChange={setSearchText}
+          onClearFilters={clearFilters}
+          hasActiveFilters={hasActiveFilters}
+          statistics={statistics}
+          isCollapsed={filtersCollapsed}
+          onToggleCollapse={() => setFiltersCollapsed(!filtersCollapsed)}
+        />
+      )}
+
+      <div className="chart-controls-extended">
+        <div className="chart-type-controls">
+          <label htmlFor="chart-type">チャート種類:</label>
+          <select
+            id="chart-type"
+            value={chartType}
+            onChange={(e) => setChartType(e.target.value)}
+          >
+            <option value="area">エリアチャート</option>
+            <option value="line">ラインチャート</option>
+            <option value="bar">バーチャート</option>
+            <option value="scatter">散布図</option>
+            <option value="pie">円グラフ</option>
+          </select>
+        </div>
+
+        {hasActiveFilters && (
+          <div className="active-filters-info">
+            <span className="filter-info">
+              {statistics.totalItems}件中 {filteredData.length}件を表示
+            </span>
+          </div>
+        )}
+      </div>
+
+      <InteractiveChart
+        data={chartData}
+        chartType={chartType}
+        viewMode={viewMode}
+        formatNumber={formatNumber}
+        onDataPointClick={handleDataPointClick}
+        title={`${viewMode === 'daily' ? '日別' : '月別'}使用量${hasActiveFilters ? ' (フィルター適用)' : ''}`}
+        enableExport={true}
+        enableDrillDown={true}
+        showControls={true}
+      />
+
+      {statistics && filteredData.length > 0 && (
+        <div className="chart-summary">
+          <h4>データサマリー</h4>
+          <div className="summary-grid">
+            <div className="summary-item">
+              <span className="summary-label">表示件数:</span>
+              <span className="summary-value">{statistics.totalItems}</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">総コスト:</span>
+              <span className="summary-value">${statistics.totalCost.toFixed(2)}</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">総トークン:</span>
+              <span className="summary-value">{formatNumber(statistics.totalTokens)}</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">平均コスト:</span>
+              <span className="summary-value">${statistics.avgCost.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
