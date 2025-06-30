@@ -17,6 +17,8 @@ Claude Codeの使用量を可視化するWebサービスです。自分のPC上�
 - **モデル別使用量**: 各AIモデルの使用統計
 - **プロジェクト別使用量**: プロジェクトごとの使用統計
 - **セッション管理**: メインセッション・サブセッションの作成と管理（WebSocket対応）
+- **インタラクティブチャート**: エクスポート・ドリルダウン・フィルタリング機能
+- **型安全性**: 完全TypeScript化による開発者体験とコード品質の向上
 
 ## セットアップ
 
@@ -79,7 +81,12 @@ curl http://localhost:3001/api/health
 npm install
 ```
 
-2. Reactアプリのビルド
+2. TypeScriptの型チェック
+```bash
+npm run typecheck
+```
+
+3. Reactアプリのビルド
 ```bash
 npm run build
 ```
@@ -101,6 +108,31 @@ npm start
 ```
 
 アプリケーションは http://localhost:3001 でアクセスできます。
+
+## TypeScript移行について
+
+### 完全TypeScript化の実装
+
+プロジェクト全体が**完全にTypeScript化**されており、以下の特徴があります：
+
+#### 型安全性
+- **Strict Mode**: `tsconfig.json`でstrict modeを有効化
+- **完全な型定義**: すべてのコンポーネント、フック、ユーティリティが型付け
+- **インターフェース定義**: `src/types/index.ts`で包括的な型定義を管理
+- **ジェネリック対応**: `DataTable`コンポーネントなどでジェネリック型を活用
+
+#### 主要な型定義
+- `SessionInfo`: WebSocketセッション管理用
+- `ChartDataPoint`: チャートデータの型安全性
+- `McpLogEntry`: MCPログエントリの構造
+- `TableColumn`: データテーブルの列定義
+- `UsageData`: 使用量データの包括的な型
+
+#### 開発者体験の向上
+- **IDE支援**: VSCodeでの自動補完・型チェック・リファクタリング支援
+- **コンパイル時エラー検出**: 実行前に型エラーを検出
+- **型安全なプロパティアクセス**: typoや不正なプロパティアクセスを防止
+- **リファクタリング安全性**: 型システムによる安全なコード変更
 
 ## MCPサーバーセットアップ（セッション管理用）
 
@@ -181,9 +213,10 @@ npm install
 
 ## 技術仕様
 
-- **バックエンド**: Node.js + Express
-- **フロントエンド**: React
+- **バックエンド**: Node.js + Express + TypeScript
+- **フロントエンド**: React + TypeScript
 - **データ形式**: JSON
+- **型安全性**: 完全TypeScript化（strict mode対応）
 - **スタイル**: CSS（レスポンシブデザイン）
 - **パッケージ管理**: 統合されたpackage.json（Flat構成）
 - **コンテナ**: Docker（マルチステージビルド）
@@ -194,39 +227,58 @@ npm install
 ```
 claude-usage-dashboard/
 ├── package.json           # 統合されたpackage.json
+├── tsconfig.json         # TypeScript設定
 ├── server.js             # Express サーバー（エントリーポイント）
 ├── src/
-│   ├── components/        # React コンポーネント
-│   │   ├── Dashboard.js
-│   │   ├── DataTable.js
-│   │   ├── LogViewer.js
-│   │   ├── McpToolUsage.js
-│   │   ├── SummaryCard.js
-│   │   └── UsageChart.js
-│   ├── hooks/            # カスタムフック
-│   │   └── useUsageData.js
-│   ├── utils/            # 共通ユーティリティ
-│   │   └── formatters.js
+│   ├── components/        # React コンポーネント（TypeScript）
+│   │   ├── Dashboard.tsx
+│   │   ├── DataTable.tsx
+│   │   ├── LogViewer.tsx
+│   │   ├── McpToolUsage.tsx
+│   │   ├── SessionManager.tsx
+│   │   ├── FilterPanel.tsx
+│   │   ├── SummaryCard.tsx
+│   │   ├── UsageChart.tsx
+│   │   └── charts/
+│   │       └── InteractiveChart.tsx
+│   ├── hooks/            # カスタムフック（TypeScript）
+│   │   ├── useUsageData.ts
+│   │   ├── useSocket.ts
+│   │   └── useChartData.ts
+│   ├── utils/            # 共通ユーティリティ（TypeScript）
+│   │   └── formatters.ts
+│   ├── types/            # 型定義
+│   │   └── index.ts
 │   ├── routes/           # Express ルート
 │   │   ├── usage.js
 │   │   ├── logs.js
-│   │   └── health.js
-│   ├── services/         # ビジネスロジック
-│   │   ├── mcpService.js
+│   │   ├── health.js
+│   │   ├── sessions.js
+│   │   └── api/          # API v2エンドポイント
+│   │       ├── summary.js
+│   │       ├── daily.js
+│   │       ├── monthly.js
+│   │       ├── mcp.js
+│   │       └── projects.js
+│   ├── services/         # ビジネスロジック（TypeScript）
+│   │   ├── mcpService.ts
 │   │   ├── todoService.js
 │   │   ├── vscodeService.js
 │   │   ├── projectService.js
-│   │   ├── pricingService.js
-│   │   └── cacheService.js
-│   ├── middleware/       # Express ミドルウェア
-│   │   └── errorHandler.js
-│   ├── config/          # 設定ファイル
-│   │   └── paths.js
-│   ├── App.js           # メインReactコンポーネント
-│   └── index.js         # Reactエントリーポイント
+│   │   ├── pricingService.ts
+│   │   ├── cacheService.js
+│   │   └── socketService.js
+│   ├── middleware/       # Express ミドルウェア（TypeScript）
+│   │   ├── errorHandler.ts
+│   │   └── security.js
+│   ├── config/          # 設定ファイル（TypeScript）
+│   │   └── paths.ts
+│   ├── App.tsx          # メインReactコンポーネント（TypeScript）
+│   └── index.tsx        # Reactエントリーポイント（TypeScript）
 ├── public/              # React パブリックファイル
 ├── build/               # React ビルド出力
 ├── docs/                # プロジェクトドキュメント
+├── mcp-server/          # MCPサーバー実装
 ├── Dockerfile           # 本番用Docker設定
 ├── Dockerfile.dev       # 開発用Docker設定
 └── docker-compose.yml   # Docker Compose設定
@@ -246,14 +298,18 @@ claude-usage-dashboard/
 - **Middleware**: 横断的な機能（エラーハンドリング等）
 - **Config**: アプリケーション設定
 
-### フロントエンド（コンポーネント構成）
-- **Components**: 再利用可能なUIコンポーネント
-  - `Dashboard.js`: サマリーダッシュボード
-  - `McpToolUsage.js`: MCPツール使用状況の可視化（チャート・統計）
-  - `UsageChart.js`: トークン使用量チャート
-  - `DataTable.js`: 汎用データテーブル
-- **Hooks**: カスタムフック（データフェッチ等）
-- **Utils**: 共通ユーティリティ関数
+### フロントエンド（TypeScriptコンポーネント構成）
+- **Components**: 型安全な再利用可能なUIコンポーネント
+  - `Dashboard.tsx`: サマリーダッシュボード（完全型付け）
+  - `McpToolUsage.tsx`: MCPツール使用状況の可視化（チャート・統計）
+  - `UsageChart.tsx`: トークン使用量チャート（インタラクティブ機能付き）
+  - `SessionManager.tsx`: WebSocketベースのセッション管理
+  - `FilterPanel.tsx`: 高度なフィルタリング機能
+  - `DataTable.tsx`: 汎用データテーブル（ジェネリック型対応）
+  - `InteractiveChart.tsx`: エクスポート・ドリルダウン機能付きチャート
+- **Hooks**: TypeScript化されたカスタムフック（データフェッチ・WebSocket等）
+- **Types**: 包括的な型定義（`src/types/index.ts`）
+- **Utils**: 型安全な共通ユーティリティ関数
 
 ## Docker 仕様
 
