@@ -1,0 +1,13 @@
+{
+  "name": "claude-session-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Claude session management",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@anthropic/mcp": "latest",
+    "socket.io-client": "^4.7.2"
+  }
+}

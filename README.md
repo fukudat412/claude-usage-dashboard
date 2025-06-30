@@ -2,12 +2,21 @@
 
 Claude Codeの使用量を可視化するWebサービスです。自分のPC上のClaude Codeデータを読み取り、使用状況を確認できます。
 
+## 新機能：セッション管理
+
+メインセッションからMCP経由でサブセッションを作成・管理できるようになりました。
+
 ## 機能
 
 - **サマリー表示**: 全体的な使用統計を表示
 - **MCPログ**: Claude Code IDE統合のセッション履歴
+- **MCPツール使用状況**: 各MCPツールの詳細な使用統計と可視化
 - **Todo履歴**: タスク管理の履歴
 - **VS Code拡張**: Claude Dev拡張の使用履歴
+- **日別・月別使用量**: トークン使用量とコストの推移
+- **モデル別使用量**: 各AIモデルの使用統計
+- **プロジェクト別使用量**: プロジェクトごとの使用統計
+- **セッション管理**: メインセッション・サブセッションの作成と管理（WebSocket対応）
 
 ## セットアップ
 
@@ -34,11 +43,21 @@ docker run -d --name claude-dashboard \
   claude-usage-dashboard
 ```
 
-#### 開発環境
+#### 開発環境（ホットリロード対応）
 ```bash
 # 開発用プロファイルで実行（ホットリロード対応）
+docker-compose --profile dev up
+
+# バックグラウンドで実行
 docker-compose --profile dev up -d
+
+# ログを確認
+docker-compose --profile dev logs -f
 ```
+
+開発環境では以下のポートが利用可能です：
+- http://localhost:3000 - React開発サーバー（ホットリロード対応）
+- http://localhost:3001 - Expressサーバー（nodemon対応）
 
 #### Dockerコンテナの管理
 ```bash
@@ -83,6 +102,54 @@ npm start
 
 アプリケーションは http://localhost:3001 でアクセスできます。
 
+## MCPサーバーセットアップ（セッション管理用）
+
+1. MCPサーバーの依存関係をインストール:
+```bash
+cd mcp-server
+npm install
+```
+
+2. Claude Codeの設定ファイルに以下を追加:
+```json
+{
+  "mcpServers": {
+    "claude-session": {
+      "command": "node",
+      "args": ["/Users/gondotomotaka/fukuda_work/claude-usage-dashboard/mcp-server/index.js"]
+    }
+  }
+}
+```
+
+3. MCPツールの使用例:
+- `initialize_session`: ダッシュボードとの接続を初期化
+- `create_subsession`: 新しいサブセッションを作成
+- `update_session_status`: セッションステータスを更新
+- `respond_to_subsession`: サブセッションへのレスポンスを送信
+
+## MCPツール使用状況機能
+
+新しく追加されたMCPツール使用状況機能では、以下の情報を確認できます：
+
+### 統計情報
+- **総呼び出し回数**: すべてのMCPツールの呼び出し総数
+- **ユニークツール数**: 使用されたツールの種類数
+- **総セッション数**: MCPツールを使用したセッション数
+
+### 可視化
+- **棒グラフ**: 上位10ツールの使用頻度とセッション数
+- **円グラフ**: ツール使用比率の視覚的表示
+- **セッション履歴**: 最近のセッションとツール使用詳細
+- **詳細テーブル**: 各ツールの初回使用・最終使用日時を含む統計
+
+### 対応ツール例
+- `getDiagnostics`: 診断情報の取得
+- `openDiff`: 差分表示
+- `close_tab`: タブの終了
+- `closeAllDiffTabs`: すべての差分タブを閉じる
+- その他のMCPツール
+
 ## データソース
 
 以下のClaude Codeデータを読み取ります：
@@ -112,6 +179,7 @@ claude-usage-dashboard/
 │   │   ├── Dashboard.js
 │   │   ├── DataTable.js
 │   │   ├── LogViewer.js
+│   │   ├── McpToolUsage.js
 │   │   ├── SummaryCard.js
 │   │   └── UsageChart.js
 │   ├── hooks/            # カスタムフック
@@ -148,11 +216,21 @@ claude-usage-dashboard/
 ### バックエンド（モジュラー構成）
 - **Routes**: APIエンドポイントの定義
 - **Services**: ビジネスロジックの実装
+  - `mcpService.js`: MCPログ解析とツール使用統計
+  - `todoService.js`: Todo履歴の読み取り
+  - `vscodeService.js`: VS Code拡張データ処理
+  - `projectService.js`: プロジェクト別使用量集計
+  - `pricingService.js`: 料金計算ロジック
+  - `cacheService.js`: キャッシュ管理
 - **Middleware**: 横断的な機能（エラーハンドリング等）
 - **Config**: アプリケーション設定
 
 ### フロントエンド（コンポーネント構成）
 - **Components**: 再利用可能なUIコンポーネント
+  - `Dashboard.js`: サマリーダッシュボード
+  - `McpToolUsage.js`: MCPツール使用状況の可視化（チャート・統計）
+  - `UsageChart.js`: トークン使用量チャート
+  - `DataTable.js`: 汎用データテーブル
 - **Hooks**: カスタムフック（データフェッチ等）
 - **Utils**: 共通ユーティリティ関数
 
@@ -173,9 +251,20 @@ Claude Codeのローカルデータディレクトリを読み取り専用でマ
 
 ## セキュリティ
 
+### データセキュリティ
 - ローカルPCのデータのみ参照
 - 外部への通信なし
 - データの保存や送信は行わない
+
+### アプリケーションセキュリティ
+- **Helmet.js**: 包括的なセキュリティヘッダー設定
+- **CSP**: Content Security Policyによるコンテンツ制限
+- **CORS**: 適切なクロスオリジン設定
+- **レート制限**: DoS攻撃防止（15分間に1000リクエスト）
+- **XSS防止**: XSSフィルター有効化
+- **クリックジャッキング防止**: X-Frame-Options設定
+- **HSTS**: HTTP Strict Transport Security
+- **MIME Sniffing防止**: X-Content-Type-Options設定
 
 ## ライセンス
 

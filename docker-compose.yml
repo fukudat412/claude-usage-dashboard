@@ -32,20 +32,24 @@ services:
       dockerfile: Dockerfile.dev
     container_name: claude-dashboard-dev
     ports:
-      - "3001:3001"
+      - "3000:3000"  # React dev server
+      - "3001:3001"  # Express server
     volumes:
       # Source code for hot reload
       - .:/app
       - /app/node_modules
       # Claude configuration (read-only)
-      - ~/.claude:/home/nodejs/.claude:ro
+      - ~/.claude:/root/.claude:ro
       # MCP logs (read-only)
-      - ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro
+      - ~/Library/Caches/claude-cli-nodejs:/root/Library/Caches/claude-cli-nodejs:ro
       # VS Code extension data (read-only)
-      - ~/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro
+      - ~/Library/Application Support/Code:/root/Library/Application Support/Code:ro
     environment:
       - NODE_ENV=development
       - PORT=3001
       - LOG_LEVEL=debug
+      - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
+    stdin_open: true
+    tty: true
     profiles:
       - dev

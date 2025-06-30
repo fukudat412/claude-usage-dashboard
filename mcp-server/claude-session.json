@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "claude-session": {
+      "command": "node",
+      "args": ["mcp-server/index.js"],
+      "cwd": "/Users/gondotomotaka/fukuda_work/claude-usage-dashboard"
+    }
+  }
+}

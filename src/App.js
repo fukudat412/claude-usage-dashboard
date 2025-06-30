@@ -3,6 +3,8 @@ import './App.css';
 import Dashboard from './components/Dashboard';
 import DataTable from './components/DataTable';
 import LogViewer from './components/LogViewer';
+import McpToolUsage from './components/McpToolUsage';
+import SessionManager from './components/SessionManager';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 
@@ -222,6 +224,20 @@ function App() {
           </div>
         );
 
+      case 'mcpTools':
+        return (
+          <div className="tab-content">
+            <McpToolUsage mcpToolUsage={usageData.mcpToolUsage} />
+          </div>
+        );
+
+      case 'sessions':
+        return (
+          <div className="tab-content">
+            <SessionManager />
+          </div>
+        );
+
       default:
         return null;
     }
@@ -284,6 +300,18 @@ function App() {
           onClick={() => setActiveTab('projects')}
         >
           プロジェクト別使用量
+        </button>
+        <button 
+          className={activeTab === 'mcpTools' ? 'active' : ''}
+          onClick={() => setActiveTab('mcpTools')}
+        >
+          MCPツール使用状況
+        </button>
+        <button 
+          className={activeTab === 'sessions' ? 'active' : ''}
+          onClick={() => setActiveTab('sessions')}
+        >
+          セッション管理
         </button>
       </nav>
 

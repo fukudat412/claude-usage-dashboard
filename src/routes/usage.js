@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../middleware/errorHandler');
-const { getMcpLogsData } = require('../services/mcpService');
+const { getMcpLogsData, getMcpToolUsageStats } = require('../services/mcpService');
 const { getTodosData } = require('../services/todoService');
 const { getVsCodeLogsData } = require('../services/vscodeService');
 const { processProjectData } = require('../services/projectService');
@@ -58,10 +58,11 @@ router.get('/', asyncHandler(async (req, res) => {
   console.log('Step 1/2: Loading lightweight data...');
   
   // 高速な順序で実行（軽いものから重いものへ）
-  const [mcpLogs, todos, vsCodeLogs] = await Promise.all([
+  const [mcpLogs, todos, vsCodeLogs, mcpToolUsage] = await Promise.all([
     getMcpLogsData(),
     getTodosData(), 
-    getVsCodeLogsData()
+    getVsCodeLogsData(),
+    getMcpToolUsageStats()
   ]);
   
   console.log(`Step 1/2 completed in ${Date.now() - startTime}ms`);
@@ -80,6 +81,7 @@ router.get('/', asyncHandler(async (req, res) => {
     mcpLogs,
     todos,
     vsCodeLogs,
+    mcpToolUsage,
     dailyUsage,
     monthlyUsage,
     modelUsage,
