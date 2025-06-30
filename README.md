@@ -111,12 +111,33 @@ npm install
 ```
 
 2. Claude Codeの設定ファイルに以下を追加:
+
+**基本セッション管理:**
 ```json
 {
   "mcpServers": {
     "claude-session": {
       "command": "node",
-      "args": ["/Users/gondotomotaka/fukuda_work/claude-usage-dashboard/mcp-server/index.js"]
+      "args": ["/Users/gondotomotaka/fukuda_work/claude-usage-dashboard/mcp-server/index.js"],
+      "cwd": "/Users/gondotomotaka/fukuda_work/claude-usage-dashboard"
+    }
+  }
+}
+```
+
+**オーケストレーション対応（推奨）:**
+```json
+{
+  "mcpServers": {
+    "claude-code-orchestration": {
+      "command": "node",
+      "args": ["/Users/gondotomotaka/fukuda_work/claude-usage-dashboard/mcp-server/index.js"],
+      "env": {
+        "API_URL": "http://localhost:52003",
+        "WORKER_ID": "claude-worker-1",
+        "WORKER_SPECIALIZATIONS": "code,review,documentation"
+      },
+      "cwd": "/Users/gondotomotaka/fukuda_work/claude-usage-dashboard"
     }
   }
 }

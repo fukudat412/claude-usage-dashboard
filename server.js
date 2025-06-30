@@ -12,6 +12,13 @@ const logsRoutes = require('./src/routes/logs');
 const healthRoutes = require('./src/routes/health');
 const sessionsRoutes = require('./src/routes/sessions');
 
+// 新しい分割されたAPIルート
+const summaryRoutes = require('./src/routes/api/summary');
+const dailyRoutes = require('./src/routes/api/daily');
+const monthlyRoutes = require('./src/routes/api/monthly');
+const mcpRoutes = require('./src/routes/api/mcp');
+const projectsRoutes = require('./src/routes/api/projects');
+
 const app = express();
 const server = http.createServer(app);
 const PORT = APP_CONFIG.port;
@@ -30,10 +37,17 @@ app.use(express.static('build'));
 // ヘルスチェックエンドポイント（Docker用）
 app.use('/api/health', healthRoutes);
 
-// APIルート
+// APIルート（レガシー）
 app.use('/api/usage', usageRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/sessions', sessionsRoutes);
+
+// 新しい分割されたAPIルート（v2）
+app.use('/api/v2/summary', summaryRoutes);
+app.use('/api/v2/daily', dailyRoutes);
+app.use('/api/v2/monthly', monthlyRoutes);
+app.use('/api/v2/mcp', mcpRoutes);
+app.use('/api/v2/projects', projectsRoutes);
 
 // React アプリをサーブ
 app.get('*', (req, res) => {

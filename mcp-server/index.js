@@ -3,14 +3,28 @@ const io = require('socket.io-client');
 
 class SessionMCPServer {
   constructor() {
+    // Support both session and orchestration modes based on environment
+    const isOrchestrationMode = process.env.WORKER_ID && process.env.API_URL;
+    
     this.server = new Server({
-      name: 'claude-session',
-      version: '1.0.0',
-      description: 'MCP server for managing Claude sessions'
+      name: isOrchestrationMode ? 'claude-code-orchestration' : 'claude-session',
+      version: isOrchestrationMode ? '2.0.0' : '1.0.0',
+      description: isOrchestrationMode 
+        ? 'MCP server for Claude Code orchestration with worker specialization'
+        : 'MCP server for managing Claude sessions'
     });
 
     this.socket = null;
     this.sessionId = null;
+    
+    // Orchestration mode properties
+    this.isOrchestrationMode = isOrchestrationMode;
+    this.apiUrl = process.env.API_URL;
+    this.workerId = process.env.WORKER_ID;
+    this.specializations = process.env.WORKER_SPECIALIZATIONS 
+      ? process.env.WORKER_SPECIALIZATIONS.split(',') 
+      : ['general'];
+    
     this.setupTools();
   }
 
@@ -25,8 +39,14 @@ class SessionMCPServer {
       if (this.sessionId) {
         this.socket.emit('register-session', {
           sessionId: this.sessionId,
-          type: 'mcp-client',
-          metadata: { source: 'mcp-server' }
+          type: this.isOrchestrationMode ? 'mcp-orchestration-worker' : 'mcp-client',
+          metadata: { 
+            source: 'mcp-server',
+            workerId: this.workerId,
+            specializations: this.specializations,
+            apiUrl: this.apiUrl,
+            mode: this.isOrchestrationMode ? 'orchestration' : 'session'
+          }
         });
       }
     });
@@ -175,7 +195,9 @@ class SessionMCPServer {
       },
       handler: async (input) => {
         const url = input.dashboardUrl || 'http://localhost:3001';
-        this.sessionId = `mcp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        this.sessionId = this.isOrchestrationMode 
+          ? `mcp-orchestration-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          : `mcp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         this.connectToWebSocket(url);
 
@@ -184,7 +206,13 @@ class SessionMCPServer {
             resolve({
               sessionId: this.sessionId,
               connected: this.socket && this.socket.connected,
-              message: 'Session initialized'
+              mode: this.isOrchestrationMode ? 'orchestration' : 'session',
+              workerId: this.workerId,
+              specializations: this.specializations,
+              apiUrl: this.apiUrl,
+              message: this.isOrchestrationMode 
+                ? 'Orchestration worker session initialized'
+                : 'Session initialized'
             });
           }, 1000);
         });
@@ -194,7 +222,14 @@ class SessionMCPServer {
 
   async start() {
     await this.server.start();
-    console.log('MCP Server started');
+    if (this.isOrchestrationMode) {
+      console.log('MCP Orchestration Server started');
+      console.log(`Worker ID: ${this.workerId}`);
+      console.log(`Specializations: ${this.specializations.join(', ')}`);
+      console.log(`API URL: ${this.apiUrl}`);
+    } else {
+      console.log('MCP Session Server started');
+    }
   }
 }
 
