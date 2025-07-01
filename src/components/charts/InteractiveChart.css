@@ -25,25 +25,6 @@
   font-size: 1.4em;
 }
 
-.export-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.export-btn {
-  background: #2196f3;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-.export-btn:hover {
-  background: #1976d2;
-}
 
 .chart-options {
   display: flex;
@@ -300,15 +281,6 @@
 }
 
 @media (max-width: 480px) {
-  .export-buttons {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .export-btn {
-    width: 100%;
-  }
-  
   .detail-modal {
     width: 95%;
     margin: 10px;

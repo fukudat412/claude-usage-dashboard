@@ -112,7 +112,6 @@ const UsageChart: React.FC<UsageChartProps> = ({
         formatNumber={formatNumber}
         onDataPointClick={handleDataPointClick}
         title={`${viewMode === 'daily' ? '日別' : '月別'}使用量${hasActiveFilters ? ' (フィルター適用)' : ''}`}
-        enableExport={true}
         enableDrillDown={true}
         showControls={true}
       />

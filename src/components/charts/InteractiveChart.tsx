@@ -18,8 +18,6 @@ import {
   PieChart,
   Pie
 } from 'recharts';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { ChartDataPoint } from '../../types';
@@ -49,7 +47,6 @@ interface InteractiveChartProps {
   formatNumber: (value: number) => string;
   onDataPointClick?: (data: any) => void;
   title?: string;
-  enableExport?: boolean;
   enableDrillDown?: boolean;
   showControls?: boolean;
 }
@@ -71,7 +68,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
   formatNumber,
   onDataPointClick,
   title,
-  enableExport = true,
   enableDrillDown = true,
   showControls = true
 }) => {
@@ -116,33 +112,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
     setHoveredData(null);
   }, []);
 
-  const exportChart = useCallback(async (format: 'png' | 'pdf') => {
-    if (!chartRef.current) return;
-
-    try {
-      const canvas = await html2canvas(chartRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2
-      });
-
-      if (format === 'png') {
-        const link = document.createElement('a');
-        link.download = `chart-${Date.now()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-      } else if (format === 'pdf') {
-        const pdf = new jsPDF('landscape');
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 280;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-        pdf.save(`chart-${Date.now()}.pdf`);
-      }
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert('エクスポートに失敗しました');
-    }
-  }, []);
 
   const customTooltip = ({ active, payload, label }: TooltipProps) => {
     if (!active || !payload || payload.length === 0) return null;
@@ -352,16 +321,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
         <div className="chart-controls">
           <div className="chart-header">
             <h3>{title || `${viewMode === 'daily' ? '日別' : '月別'}使用量`}</h3>
-            {enableExport && (
-              <div className="export-buttons">
-                <button onClick={() => exportChart('png')} className="export-btn">
-                  PNG出力
-                </button>
-                <button onClick={() => exportChart('pdf')} className="export-btn">
-                  PDF出力
-                </button>
-              </div>
-            )}
           </div>
           
           <div className="chart-options">
