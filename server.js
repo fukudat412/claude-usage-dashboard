@@ -12,68 +12,60 @@ const logsRoutes = require('./src/routes/logs');
 const healthRoutes = require('./src/routes/health');
 const sessionsRoutes = require('./src/routes/sessions');
 
-// 新しい分割されたAPIルート
-const summaryRoutes = require('./src/routes/api/summary');
-const dailyRoutes = require('./src/routes/api/daily');
-const monthlyRoutes = require('./src/routes/api/monthly');
-const mcpRoutes = require('./src/routes/api/mcp');
-const projectsRoutes = require('./src/routes/api/projects');
+// API v2ルート
+const apiSummaryRoutes = require('./src/routes/api/summary');
+const apiDailyRoutes = require('./src/routes/api/daily');
+const apiMonthlyRoutes = require('./src/routes/api/monthly');
+const apiMcpRoutes = require('./src/routes/api/mcp');
+const apiProjectsRoutes = require('./src/routes/api/projects');
 
 const app = express();
-const server = http.createServer(app);
-const PORT = APP_CONFIG.port;
+const PORT = process.env.PORT || 3001;
 
-// WebSocketサービスの初期化
-socketService.initialize(server);
-
-// セキュリティミドルウェア設定
+// セキュリティミドルウェアの設定
 configureSecurityMiddleware(app);
 
-// 基本ミドルウェア設定
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static('build'));
+// JSON パース
+app.use(express.json());
 
-// ヘルスチェックエンドポイント（Docker用）
-app.use('/api/health', healthRoutes);
+// 静的ファイルの提供（Reactビルド）
+app.use(express.static(path.join(__dirname, 'build')));
 
-// APIルート（レガシー）
+// APIルート
 app.use('/api/usage', usageRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/health', healthRoutes);
 app.use('/api/sessions', sessionsRoutes);
 
-// 新しい分割されたAPIルート（v2）
-app.use('/api/v2/summary', summaryRoutes);
-app.use('/api/v2/daily', dailyRoutes);
-app.use('/api/v2/monthly', monthlyRoutes);
-app.use('/api/v2/mcp', mcpRoutes);
-app.use('/api/v2/projects', projectsRoutes);
+// API v2ルート
+app.use('/api/v2/summary', apiSummaryRoutes);
+app.use('/api/v2/daily', apiDailyRoutes);
+app.use('/api/v2/monthly', apiMonthlyRoutes);
+app.use('/api/v2/mcp', apiMcpRoutes);
+app.use('/api/v2/projects', apiProjectsRoutes);
 
-// React アプリをサーブ
+// SPAのためのフォールバック
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// エラーハンドリングミドルウェア
+// 404ハンドラー
 app.use(notFound);
+
+// エラーハンドリング
 app.use(errorHandler);
+
+// HTTPサーバーの作成
+const server = http.createServer(app);
+
+// WebSocketサーバーの初期化
+socketService.initialize(server);
 
 // サーバー起動
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Log level: ${APP_CONFIG.logLevel}`);
+  console.log(`Log level: ${process.env.LOG_LEVEL || 'info'}`);
   console.log(`Access dashboard at http://localhost:${PORT}`);
-  console.log(`WebSocket server is running`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
+  console.log('WebSocket server is running');
 });
