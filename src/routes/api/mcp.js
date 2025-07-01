@@ -34,7 +34,6 @@ router.get('/logs', asyncHandler(async (req, res) => {
   // クエリパラメータ
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 50;
-  const sessionId = req.query.sessionId;
   
   // バリデーション
   if (page < 1 || limit < 1 || limit > 500) {
@@ -45,7 +44,7 @@ router.get('/logs', asyncHandler(async (req, res) => {
   }
   
   // キャッシュチェック（簡素化）
-  const cacheKey = `mcpLogs_${page}_${limit}_${sessionId || 'all'}`;
+  const cacheKey = `mcpLogs_${page}_${limit}`;
   const cachedData = cacheService.getCache(cacheKey);
   if (cachedData) {
     console.log('Returning cached MCP logs data');
@@ -56,11 +55,6 @@ router.get('/logs', asyncHandler(async (req, res) => {
   const startTime = Date.now();
   
   let mcpLogs = await getMcpLogsData();
-  
-  // セッションIDフィルタリング
-  if (sessionId) {
-    mcpLogs = mcpLogs.filter(log => log.sessionId === sessionId);
-  }
   
   // ページネーション適用
   const result = paginateArray(mcpLogs, page, limit);

@@ -51,8 +51,7 @@ const App: React.FC = () => {
     { key: 'file', title: 'ファイル名', type: 'text' },
     { key: 'size', title: 'サイズ', type: 'bytes' },
     { key: 'entries', title: 'エントリ数', type: 'number' },
-    { key: 'timestamp', title: '更新日時', type: 'date' },
-    { key: 'sessionId', title: 'セッションID', type: 'text' }
+    { key: 'timestamp', title: '更新日時', type: 'date' }
   ];
 
   const todoColumns: TableColumn[] = [

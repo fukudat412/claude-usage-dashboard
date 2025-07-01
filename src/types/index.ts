@@ -84,7 +84,6 @@ export interface FilterOptions {
     start: Date;
     end: Date;
   };
-  sessionId?: string;
   minTokens?: number;
   maxTokens?: number;
 }

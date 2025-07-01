@@ -76,9 +76,6 @@ const McpToolUsage: React.FC<McpToolUsageProps> = ({ mcpToolUsage }) => {
     pieData.push({ name: 'その他', value: othersCount });
   }
 
-  // 最近のセッション表示
-  const recentSessions = sessions.slice(0, 5);
-
   return (
     <div className="mcp-tool-usage">
       <h2>MCPツール使用統計</h2>
@@ -144,29 +141,6 @@ const McpToolUsage: React.FC<McpToolUsageProps> = ({ mcpToolUsage }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* 最近のセッション */}
-      <div className="recent-sessions">
-        <h3>最近のMCPセッション</h3>
-        <div className="session-list">
-          {recentSessions.map((session, index) => (
-            <div key={index} className="session-item">
-              <div className="session-time">
-                {new Date(session.startTime).toLocaleString('ja-JP')}
-              </div>
-              <div className="session-tools">
-                {Object.entries(session.tools).map(([tool, count]) => (
-                  <span key={tool} className="tool-badge">
-                    {tool}: {count}回
-                  </span>
-                ))}
-              </div>
-              <div className="session-cwd">
-                {session.cwd}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* 詳細テーブル */}
       <div className="tool-details">
