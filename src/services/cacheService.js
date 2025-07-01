@@ -1,89 +1,74 @@
-const crypto = require('crypto');
-const fs = require('fs-extra');
-const path = require('path');
-const { CLAUDE_PATHS, APP_CONFIG } = require('../config/paths');
-
 /**
- * キャッシュサービス
+ * シンプルなタイムベースキャッシュサービス
+ * 個人用ダッシュボード向けに簡素化されたキャッシュ実装
  */
-class CacheService {
+class SimpleCacheService {
   constructor() {
-    this.dataCache = new Map();
-    this.cacheTimestamp = null;
-  }
-
-  /**
-   * ファイルハッシュを計算してキャッシュの有効性を確認
-   */
-  async getFilesHash() {
-    try {
-      const projectDirs = await fs.readdir(CLAUDE_PATHS.projects);
-      let hashString = '';
-      
-      for (const projectDir of projectDirs) {
-        const projectPath = path.join(CLAUDE_PATHS.projects, projectDir);
-        const stats = await fs.stat(projectPath);
-        
-        if (stats.isDirectory()) {
-          const files = await fs.readdir(projectPath);
-          for (const file of files) {
-            if (file.endsWith('.jsonl')) {
-              const filePath = path.join(projectPath, file);
-              const fileStats = await fs.stat(filePath);
-              hashString += `${filePath}:${fileStats.mtime.getTime()};`;
-            }
-          }
-        }
-      }
-      
-      return crypto.createHash('md5').update(hashString).digest('hex');
-    } catch (error) {
-      console.warn('Failed to generate files hash:', error.message);
-      return null;
-    }
-  }
-
-  /**
-   * キャッシュの有効性をチェック
-   */
-  async isCacheValid() {
-    if (!this.cacheTimestamp || Date.now() - this.cacheTimestamp > APP_CONFIG.cacheTimeout) {
-      return false;
-    }
-    
-    const currentHash = await this.getFilesHash();
-    const cachedHash = this.dataCache.get('filesHash');
-    
-    return currentHash === cachedHash;
+    this.cache = new Map();
+    this.defaultTTL = 5 * 60 * 1000; // 5分
   }
 
   /**
    * データをキャッシュに保存
+   * @param {string} key - キャッシュキー
+   * @param {any} value - 保存するデータ
+   * @param {number} ttl - TTL（ミリ秒）、省略時はデフォルト値
    */
-  async setCache(key, data) {
-    const filesHash = await this.getFilesHash();
-    this.dataCache.set(key, data);
-    this.dataCache.set('filesHash', filesHash);
-    this.cacheTimestamp = Date.now();
+  setCache(key, value, ttl = this.defaultTTL) {
+    this.cache.set(key, {
+      value,
+      expires: Date.now() + ttl
+    });
   }
 
   /**
    * キャッシュからデータを取得
+   * @param {string} key - キャッシュキー
+   * @returns {any|null} キャッシュされたデータまたはnull
    */
   getCache(key) {
-    return this.dataCache.get(key);
+    const item = this.cache.get(key);
+    
+    if (!item) {
+      return null;
+    }
+    
+    if (Date.now() > item.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.value;
   }
 
   /**
    * キャッシュをクリア
    */
   clearCache() {
-    this.dataCache.clear();
-    this.cacheTimestamp = null;
+    this.cache.clear();
+  }
+
+  /**
+   * 期限切れのキャッシュエントリを削除
+   */
+  cleanup() {
+    const now = Date.now();
+    for (const [key, item] of this.cache) {
+      if (now > item.expires) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * キャッシュサイズを取得
+   */
+  getSize() {
+    return this.cache.size;
   }
 }
 
 // シングルトンインスタンス
-const cacheService = new CacheService();
+const cacheService = new SimpleCacheService();
 
 module.exports = cacheService;

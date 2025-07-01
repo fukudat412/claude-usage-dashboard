@@ -44,10 +44,10 @@ router.get('/logs', asyncHandler(async (req, res) => {
     });
   }
   
-  // キャッシュチェック
+  // キャッシュチェック（簡素化）
   const cacheKey = `mcpLogs_${page}_${limit}_${sessionId || 'all'}`;
   const cachedData = cacheService.getCache(cacheKey);
-  if (cachedData && await cacheService.isCacheValid()) {
+  if (cachedData) {
     console.log('Returning cached MCP logs data');
     return res.json(cachedData);
   }
@@ -66,7 +66,7 @@ router.get('/logs', asyncHandler(async (req, res) => {
   const result = paginateArray(mcpLogs, page, limit);
   
   // キャッシュに保存
-  await cacheService.setCache(cacheKey, result, 3 * 60 * 1000); // 3分キャッシュ
+  cacheService.setCache(cacheKey, result); // デフォルト5分キャッシュ
   
   console.log(`MCP logs data generated in ${Date.now() - startTime}ms`);
   res.json(result);
@@ -78,9 +78,9 @@ router.get('/logs', asyncHandler(async (req, res) => {
 router.get('/tools', asyncHandler(async (req, res) => {
   console.log('Fetching MCP tool usage stats...');
   
-  // キャッシュチェック
+  // キャッシュチェック（簡素化）
   const cachedData = cacheService.getCache('mcpToolUsage');
-  if (cachedData && await cacheService.isCacheValid()) {
+  if (cachedData) {
     console.log('Returning cached MCP tool usage data');
     return res.json(cachedData);
   }
@@ -91,7 +91,7 @@ router.get('/tools', asyncHandler(async (req, res) => {
   const mcpToolUsage = await getMcpToolUsageStats();
   
   // キャッシュに保存
-  await cacheService.setCache('mcpToolUsage', mcpToolUsage, 5 * 60 * 1000); // 5分キャッシュ
+  cacheService.setCache('mcpToolUsage', mcpToolUsage); // デフォルト5分キャッシュ
   
   console.log(`MCP tool usage data generated in ${Date.now() - startTime}ms`);
   res.json(mcpToolUsage);

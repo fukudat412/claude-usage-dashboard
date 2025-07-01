@@ -48,7 +48,7 @@ router.get('/', asyncHandler(async (req, res) => {
   // キャッシュチェック
   const cacheKey = `dailyUsage_${page}_${limit}_${startDate || 'all'}_${endDate || 'all'}`;
   const cachedData = cacheService.getCache(cacheKey);
-  if (cachedData && await cacheService.isCacheValid()) {
+  if (cachedData) {
     console.log('Returning cached daily usage data');
     return res.json(cachedData);
   }
@@ -73,7 +73,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const result = paginateArray(dailyUsage, page, limit);
   
   // キャッシュに保存
-  await cacheService.setCache(cacheKey, result, 5 * 60 * 1000); // 5分キャッシュ
+  cacheService.setCache(cacheKey, result);
   
   console.log(`Daily usage data generated in ${Date.now() - startTime}ms`);
   res.json(result);

@@ -48,7 +48,7 @@ router.get('/', asyncHandler(async (req, res) => {
   
   // キャッシュからサマリーデータを取得
   const cachedData = cacheService.getCache('usageData');
-  if (cachedData && await cacheService.isCacheValid()) {
+  if (cachedData) {
     console.log('Returning cached summary');
     return res.json(cachedData.summary);
   }

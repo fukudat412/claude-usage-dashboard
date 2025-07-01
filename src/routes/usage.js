@@ -47,9 +47,10 @@ router.get('/', asyncHandler(async (req, res) => {
   console.log('Fetching usage data...');
   
   // キャッシュチェック
-  if (await cacheService.isCacheValid()) {
+  const cachedData = cacheService.getCache('usageData');
+  if (cachedData) {
     console.log('Returning cached data');
-    return res.json(cacheService.getCache('usageData'));
+    return res.json(cachedData);
   }
   
   console.log('Cache miss, fetching fresh data...');
@@ -92,7 +93,7 @@ router.get('/', asyncHandler(async (req, res) => {
   data.summary = generateSummary(data);
   
   // キャッシュに保存
-  await cacheService.setCache('usageData', data);
+  cacheService.setCache('usageData', data);
   
   console.log(`Total processing time: ${Date.now() - startTime}ms`);
   res.json(data);

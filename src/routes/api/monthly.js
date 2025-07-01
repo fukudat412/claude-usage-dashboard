@@ -54,7 +54,7 @@ router.get('/', asyncHandler(async (req, res) => {
   // キャッシュチェック
   const cacheKey = `monthlyUsage_${page}_${limit}_${year || 'all'}`;
   const cachedData = cacheService.getCache(cacheKey);
-  if (cachedData && await cacheService.isCacheValid()) {
+  if (cachedData) {
     console.log('Returning cached monthly usage data');
     return res.json(cachedData);
   }
@@ -76,7 +76,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const result = paginateArray(monthlyUsage, page, limit);
   
   // キャッシュに保存
-  await cacheService.setCache(cacheKey, result, 10 * 60 * 1000); // 10分キャッシュ
+  cacheService.setCache(cacheKey, result);
   
   console.log(`Monthly usage data generated in ${Date.now() - startTime}ms`);
   res.json(result);

@@ -62,10 +62,10 @@ router.get('/', asyncHandler(async (req, res) => {
     });
   }
   
-  // キャッシュチェック
+  // キャッシュチェック（簡素化）
   const cacheKey = `projects_${page}_${limit}_${sortBy}_${sortOrder}_${minCost}_${search || 'all'}`;
   const cachedData = cacheService.getCache(cacheKey);
-  if (cachedData && await cacheService.isCacheValid()) {
+  if (cachedData) {
     console.log('Returning cached projects data');
     return res.json(cachedData);
   }
@@ -142,7 +142,7 @@ router.get('/', asyncHandler(async (req, res) => {
   };
   
   // キャッシュに保存
-  await cacheService.setCache(cacheKey, result, 5 * 60 * 1000); // 5分キャッシュ
+  cacheService.setCache(cacheKey, result); // デフォルト5分キャッシュ
   
   console.log(`Projects data generated in ${Date.now() - startTime}ms`);
   res.json(result);
