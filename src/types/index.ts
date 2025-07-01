@@ -28,6 +28,9 @@ export interface UsageData {
   vsCodeLogs?: any[];
   dailyUsage?: any[];
   monthlyUsage?: any[];
+  mcpToolUsage?: any;
+  projects?: any[];
+  modelUsage?: any[];
 }
 
 export interface McpLogEntry {

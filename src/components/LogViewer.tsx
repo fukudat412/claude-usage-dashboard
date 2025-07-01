@@ -22,14 +22,14 @@ const LogViewer: React.FC<LogViewerProps> = ({ selectedLog, onClose, formatDate 
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/logs/content?file=${encodeURIComponent(filePath)}`);
+      const response = await fetch(`/api/v2/logs/content?file=${encodeURIComponent(filePath)}`);
       
       if (!response.ok) {
         throw new Error('ログファイルの読み込みに失敗しました');
       }
       
-      const data = await response.json();
-      setLogContent(data);
+      const result = await response.json();
+      setLogContent(result.data.content);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
