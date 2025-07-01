@@ -6,17 +6,12 @@ import {
   Line,
   BarChart,
   Bar,
-  ScatterChart,
-  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie
+  ResponsiveContainer
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -34,15 +29,10 @@ interface Metric {
   color: string;
 }
 
-interface PieDataEntry {
-  name: string;
-  value: number;
-  color: string;
-}
 
 interface InteractiveChartProps {
   data: ChartDataPoint[];
-  chartType?: 'area' | 'line' | 'bar' | 'scatter' | 'pie';
+  chartType?: 'area' | 'line' | 'bar';
   viewMode?: 'daily' | 'monthly';
   formatNumber: (value: number) => string;
   onDataPointClick?: (data: any) => void;
@@ -214,66 +204,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
           </BarChart>
         );
 
-      case 'scatter':
-        return (
-          <ScatterChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              type="number"
-              dataKey="inputTokens"
-              name="入力トークン"
-              tick={{ fontSize: 12 }}
-              tickFormatter={formatNumber}
-            />
-            <YAxis 
-              type="number"
-              dataKey="outputTokens"
-              name="出力トークン"
-              tick={{ fontSize: 12 }}
-              tickFormatter={formatNumber}
-            />
-            <Tooltip 
-              content={customTooltip}
-              cursor={{ strokeDasharray: '3 3' }}
-            />
-            <Legend />
-            <Scatter 
-              dataKey="totalTokens"
-              fill="#8884d8"
-              name="総トークン数"
-              onClick={(data: any) => handleDataPointClick(data.payload)}
-            />
-          </ScatterChart>
-        );
-
-      case 'pie':
-        const pieData: PieDataEntry[] = chartData.slice(-5).map((item, index) => ({
-          name: item.displayDate,
-          value: item[selectedMetric as keyof ProcessedDataPoint] as number,
-          color: `hsl(${index * 72}, 70%, 50%)`
-        }));
-
-        return (
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              outerRadius={120}
-              dataKey="value"
-              onClick={(data: any) => handleDataPointClick(data.payload)}
-            >
-              {pieData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip 
-              content={customTooltip}
-              cursor={{ strokeDasharray: '3 3' }}
-            />
-            <Legend />
-          </PieChart>
-        );
 
       default: // area
         return (

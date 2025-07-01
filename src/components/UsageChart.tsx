@@ -22,7 +22,7 @@ interface UsageChartProps {
   enableFilters?: boolean;
 }
 
-type ChartType = 'area' | 'line' | 'bar' | 'scatter' | 'pie';
+type ChartType = 'area' | 'line' | 'bar';
 
 const UsageChart: React.FC<UsageChartProps> = ({ 
   data, 
@@ -91,8 +91,6 @@ const UsageChart: React.FC<UsageChartProps> = ({
             <option value="area">エリアチャート</option>
             <option value="line">ラインチャート</option>
             <option value="bar">バーチャート</option>
-            <option value="scatter">散布図</option>
-            <option value="pie">円グラフ</option>
           </select>
         </div>
 
