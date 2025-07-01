@@ -78,10 +78,60 @@
   background: #f8f9fa;
 }
 
-.main-content {
+.sub-tabs {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  overflow-x: auto;
+}
+
+.sub-tabs button {
+  background: white;
+  border: 1px solid #e0e0e0;
+  color: #666;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.sub-tabs button:hover {
+  background: #e9ecef;
+  border-color: #ccc;
+}
+
+.sub-tabs button.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.sub-content {
   padding: 2rem;
+}
+
+.sub-content h2 {
+  margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.main-content {
+  padding: 0;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.tab-content {
+  min-height: 60vh;
+}
+
+.tab-content:not(.has-sub-tabs) {
+  padding: 2rem;
 }
 
 .loading, .error {

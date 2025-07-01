@@ -8,14 +8,20 @@ import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
 
-type TabType = 'summary' | 'mcp' | 'todos' | 'vscode' | 'daily' | 'monthly' | 'models' | 'projects' | 'mcpTools';
+type TabType = 'summary' | 'usage' | 'projects' | 'logs';
 type ViewMode = 'daily' | 'monthly';
+type UsageSubTab = 'daily' | 'monthly' | 'models';
+type ProjectsSubTab = 'projects' | 'vscode' | 'todos';
+type LogsSubTab = 'mcp' | 'mcpTools';
 
 const App: React.FC = () => {
   const { usageData, loading, error, refetch } = useUsageData();
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [selectedLog, setSelectedLog] = useState<McpLogEntry | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const [usageSubTab, setUsageSubTab] = useState<UsageSubTab>('daily');
+  const [projectsSubTab, setProjectsSubTab] = useState<ProjectsSubTab>('projects');
+  const [logsSubTab, setLogsSubTab] = useState<LogsSubTab>('mcp');
 
   if (loading) {
     return (
@@ -111,134 +117,209 @@ const App: React.FC = () => {
     setSelectedLog(null);
   };
 
+  const renderUsageSubTabs = (): React.ReactNode => {
+    return (
+      <div className="sub-tabs">
+        <button 
+          className={usageSubTab === 'daily' ? 'active' : ''}
+          onClick={() => setUsageSubTab('daily')}
+        >
+          日別使用量
+        </button>
+        <button 
+          className={usageSubTab === 'monthly' ? 'active' : ''}
+          onClick={() => setUsageSubTab('monthly')}
+        >
+          月別使用量
+        </button>
+        <button 
+          className={usageSubTab === 'models' ? 'active' : ''}
+          onClick={() => setUsageSubTab('models')}
+        >
+          モデル別使用量
+        </button>
+      </div>
+    );
+  };
+
+  const renderProjectsSubTabs = (): React.ReactNode => {
+    return (
+      <div className="sub-tabs">
+        <button 
+          className={projectsSubTab === 'projects' ? 'active' : ''}
+          onClick={() => setProjectsSubTab('projects')}
+        >
+          プロジェクト別
+        </button>
+        <button 
+          className={projectsSubTab === 'vscode' ? 'active' : ''}
+          onClick={() => setProjectsSubTab('vscode')}
+        >
+          VS Code拡張
+        </button>
+        <button 
+          className={projectsSubTab === 'todos' ? 'active' : ''}
+          onClick={() => setProjectsSubTab('todos')}
+        >
+          Todo履歴
+        </button>
+      </div>
+    );
+  };
+
+  const renderLogsSubTabs = (): React.ReactNode => {
+    return (
+      <div className="sub-tabs">
+        <button 
+          className={logsSubTab === 'mcp' ? 'active' : ''}
+          onClick={() => setLogsSubTab('mcp')}
+        >
+          MCPログ
+        </button>
+        <button 
+          className={logsSubTab === 'mcpTools' ? 'active' : ''}
+          onClick={() => setLogsSubTab('mcpTools')}
+        >
+          MCPツール使用状況
+        </button>
+      </div>
+    );
+  };
+
   const renderTabContent = (): React.ReactNode => {
     if (!usageData) return null;
 
     switch (activeTab) {
       case 'summary':
         return (
-          <Dashboard
-            usageData={usageData}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            formatNumber={formatNumber}
-            formatBytes={formatBytes}
-            formatDate={formatDate}
-          />
-        );
-
-      case 'mcp':
-        return (
-          <div className="tab-content">
-            <h2>MCPログ</h2>
-            <DataTable
-              data={usageData.mcpLogs || []}
-              columns={mcpColumns}
-              onRowClick={handleLogClick}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
+          <div className="tab-content has-sub-tabs" style={{ padding: '2rem' }}>
+            <Dashboard
+              usageData={usageData}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
               formatNumber={formatNumber}
+              formatBytes={formatBytes}
+              formatDate={formatDate}
             />
           </div>
         );
 
-      case 'todos':
+      case 'usage':
         return (
           <div className="tab-content">
-            <h2>Todo履歴</h2>
-            <DataTable
-              data={usageData.todos || []}
-              columns={todoColumns}
-              onRowClick={handleLogClick}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
-              formatNumber={formatNumber}
-            />
-          </div>
-        );
-
-      case 'vscode':
-        return (
-          <div className="tab-content">
-            <h2>VS Code拡張</h2>
-            <DataTable
-              data={usageData.vsCodeLogs || []}
-              columns={vscodeColumns}
-              onRowClick={() => {}}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
-              formatNumber={formatNumber}
-            />
-          </div>
-        );
-
-      case 'daily':
-        return (
-          <div className="tab-content">
-            <h2>日別使用量</h2>
-            <DataTable
-              data={usageData.daily || []}
-              columns={dailyColumns}
-              onRowClick={() => {}}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
-              formatNumber={formatNumber}
-            />
-          </div>
-        );
-
-      case 'monthly':
-        return (
-          <div className="tab-content">
-            <h2>月別使用量</h2>
-            <DataTable
-              data={usageData.monthly || []}
-              columns={monthlyColumns}
-              onRowClick={() => {}}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
-              formatNumber={formatNumber}
-            />
-          </div>
-        );
-
-      case 'models':
-        return (
-          <div className="tab-content">
-            <h2>モデル別使用量</h2>
-            <DataTable
-              data={(usageData as any).modelUsage || []}
-              columns={modelColumns}
-              onRowClick={() => {}}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
-              formatNumber={formatNumber}
-            />
+            {renderUsageSubTabs()}
+            {usageSubTab === 'daily' && (
+              <div className="sub-content">
+                <h2>日別使用量</h2>
+                <DataTable
+                  data={usageData.daily || []}
+                  columns={dailyColumns}
+                  onRowClick={() => {}}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
+            {usageSubTab === 'monthly' && (
+              <div className="sub-content">
+                <h2>月別使用量</h2>
+                <DataTable
+                  data={usageData.monthly || []}
+                  columns={monthlyColumns}
+                  onRowClick={() => {}}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
+            {usageSubTab === 'models' && (
+              <div className="sub-content">
+                <h2>モデル別使用量</h2>
+                <DataTable
+                  data={(usageData as any).modelUsage || []}
+                  columns={modelColumns}
+                  onRowClick={() => {}}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
           </div>
         );
 
       case 'projects':
         return (
           <div className="tab-content">
-            <h2>プロジェクト別使用量</h2>
-            <DataTable
-              data={(usageData as any).projects || []}
-              columns={projectColumns}
-              onRowClick={() => {}}
-              formatDate={formatDate}
-              formatBytes={formatBytes}
-              formatNumber={formatNumber}
-            />
+            {renderProjectsSubTabs()}
+            {projectsSubTab === 'projects' && (
+              <div className="sub-content">
+                <h2>プロジェクト別使用量</h2>
+                <DataTable
+                  data={(usageData as any).projects || []}
+                  columns={projectColumns}
+                  onRowClick={() => {}}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
+            {projectsSubTab === 'vscode' && (
+              <div className="sub-content">
+                <h2>VS Code拡張</h2>
+                <DataTable
+                  data={usageData.vsCodeLogs || []}
+                  columns={vscodeColumns}
+                  onRowClick={() => {}}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
+            {projectsSubTab === 'todos' && (
+              <div className="sub-content">
+                <h2>Todo履歴</h2>
+                <DataTable
+                  data={usageData.todos || []}
+                  columns={todoColumns}
+                  onRowClick={handleLogClick}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
           </div>
         );
 
-      case 'mcpTools':
+      case 'logs':
         return (
           <div className="tab-content">
-            <McpToolUsage mcpToolUsage={(usageData as any).mcpToolUsage} />
+            {renderLogsSubTabs()}
+            {logsSubTab === 'mcp' && (
+              <div className="sub-content">
+                <h2>MCPログ</h2>
+                <DataTable
+                  data={usageData.mcpLogs || []}
+                  columns={mcpColumns}
+                  onRowClick={handleLogClick}
+                  formatDate={formatDate}
+                  formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
+            {logsSubTab === 'mcpTools' && (
+              <div className="sub-content">
+                <McpToolUsage mcpToolUsage={(usageData as any).mcpToolUsage} />
+              </div>
+            )}
           </div>
         );
-
 
       default:
         return null;
@@ -262,52 +343,22 @@ const App: React.FC = () => {
           サマリー
         </button>
         <button 
-          className={activeTab === 'mcp' ? 'active' : ''}
-          onClick={() => setActiveTab('mcp')}
+          className={activeTab === 'usage' ? 'active' : ''}
+          onClick={() => setActiveTab('usage')}
         >
-          MCPログ
-        </button>
-        <button 
-          className={activeTab === 'todos' ? 'active' : ''}
-          onClick={() => setActiveTab('todos')}
-        >
-          Todo履歴
-        </button>
-        <button 
-          className={activeTab === 'vscode' ? 'active' : ''}
-          onClick={() => setActiveTab('vscode')}
-        >
-          VS Code拡張
-        </button>
-        <button 
-          className={activeTab === 'daily' ? 'active' : ''}
-          onClick={() => setActiveTab('daily')}
-        >
-          日別使用量
-        </button>
-        <button 
-          className={activeTab === 'monthly' ? 'active' : ''}
-          onClick={() => setActiveTab('monthly')}
-        >
-          月別使用量
-        </button>
-        <button 
-          className={activeTab === 'models' ? 'active' : ''}
-          onClick={() => setActiveTab('models')}
-        >
-          モデル別使用量
+          使用量分析
         </button>
         <button 
           className={activeTab === 'projects' ? 'active' : ''}
           onClick={() => setActiveTab('projects')}
         >
-          プロジェクト別使用量
+          プロジェクト管理
         </button>
         <button 
-          className={activeTab === 'mcpTools' ? 'active' : ''}
-          onClick={() => setActiveTab('mcpTools')}
+          className={activeTab === 'logs' ? 'active' : ''}
+          onClick={() => setActiveTab('logs')}
         >
-          MCPツール使用状況
+          ログ・ツール
         </button>
       </nav>
 
