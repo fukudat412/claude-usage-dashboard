@@ -11,7 +11,7 @@ import { McpLogEntry } from './types';
 type TabType = 'summary' | 'usage' | 'projects' | 'logs';
 type ViewMode = 'daily' | 'monthly';
 type UsageSubTab = 'daily' | 'monthly' | 'models';
-type ProjectsSubTab = 'projects' | 'vscode' | 'todos';
+type ProjectsSubTab = 'projects' | 'todos';
 type LogsSubTab = 'mcp' | 'mcpTools';
 
 const App: React.FC = () => {
@@ -62,12 +62,6 @@ const App: React.FC = () => {
     { key: 'timestamp', title: '更新日時', type: 'date' }
   ];
 
-  const vscodeColumns: TableColumn[] = [
-    { key: 'taskId', title: 'タスクID', type: 'text' },
-    { key: 'messageCount', title: 'メッセージ数', type: 'number' },
-    { key: 'conversationCount', title: '会話数', type: 'number' },
-    { key: 'timestamp', title: '更新日時', type: 'date' }
-  ];
 
   const dailyColumns: TableColumn[] = [
     { key: 'date', title: '日付', type: 'text' },
@@ -149,13 +143,7 @@ const App: React.FC = () => {
           className={projectsSubTab === 'projects' ? 'active' : ''}
           onClick={() => setProjectsSubTab('projects')}
         >
-          プロジェクト別
-        </button>
-        <button 
-          className={projectsSubTab === 'vscode' ? 'active' : ''}
-          onClick={() => setProjectsSubTab('vscode')}
-        >
-          VS Code拡張
+          プロジェクト・VS Code統合
         </button>
         <button 
           className={projectsSubTab === 'todos' ? 'active' : ''}
@@ -256,23 +244,10 @@ const App: React.FC = () => {
             {renderProjectsSubTabs()}
             {projectsSubTab === 'projects' && (
               <div className="sub-content">
-                <h2>プロジェクト別使用量</h2>
+                <h2>プロジェクト別使用量（VS Code拡張統合）</h2>
                 <DataTable
                   data={(usageData as any).projects || []}
                   columns={projectColumns}
-                  onRowClick={() => {}}
-                  formatDate={formatDate}
-                  formatBytes={formatBytes}
-                  formatNumber={formatNumber}
-                />
-              </div>
-            )}
-            {projectsSubTab === 'vscode' && (
-              <div className="sub-content">
-                <h2>VS Code拡張</h2>
-                <DataTable
-                  data={usageData.vsCodeLogs || []}
-                  columns={vscodeColumns}
                   onRowClick={() => {}}
                   formatDate={formatDate}
                   formatBytes={formatBytes}

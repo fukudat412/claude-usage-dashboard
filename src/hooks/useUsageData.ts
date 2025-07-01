@@ -52,7 +52,7 @@ const useUsageData = (): UseUsageDataReturn => {
         summary: summary,
         mcpLogs: mcpLogsData.data || [],
         todos: [], // TODO: 必要に応じて別途取得
-        vsCodeLogs: [], // TODO: 必要に応じて別途取得
+        vsCodeLogs: [], // VS Code拡張データはプロジェクトに統合済み
         dailyUsage: dailyData.data || [],
         monthlyUsage: monthlyData.data || [],
         
