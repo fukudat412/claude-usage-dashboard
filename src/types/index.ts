@@ -86,20 +86,6 @@ export interface FilterOptions {
   maxTokens?: number;
 }
 
-export interface SessionInfo {
-  id: string;
-  type: 'main' | 'subsession';
-  status: 'active' | 'pending' | 'completed' | 'failed' | 'disconnected';
-  task?: string;
-  parentSessionId?: string;
-  createdAt: string;
-  lastActivity: string;
-  response?: any;
-  startTime?: string;
-  endTime?: string;
-  totalTokens?: number;
-  totalCost?: number;
-}
 
 // Component prop types
 export interface SummaryCardProps {
@@ -150,12 +136,6 @@ export interface UseChartDataReturn {
   refetch: () => void;
 }
 
-export interface UseSocketReturn {
-  isConnected: boolean;
-  emit: (event: string, data?: any) => void;
-  on: (event: string, callback: (data: any) => void) => void;
-  off: (event: string, callback?: (data: any) => void) => void;
-}
 
 // Error types
 export interface AppError extends Error {

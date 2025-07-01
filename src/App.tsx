@@ -4,12 +4,11 @@ import Dashboard from './components/Dashboard';
 import DataTable, { TableColumn } from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
-import SessionManager from './components/SessionManager';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
 
-type TabType = 'summary' | 'mcp' | 'todos' | 'vscode' | 'daily' | 'monthly' | 'models' | 'projects' | 'mcpTools' | 'sessions';
+type TabType = 'summary' | 'mcp' | 'todos' | 'vscode' | 'daily' | 'monthly' | 'models' | 'projects' | 'mcpTools';
 type ViewMode = 'daily' | 'monthly';
 
 const App: React.FC = () => {
@@ -240,12 +239,6 @@ const App: React.FC = () => {
           </div>
         );
 
-      case 'sessions':
-        return (
-          <div className="tab-content">
-            <SessionManager />
-          </div>
-        );
 
       default:
         return null;
@@ -315,12 +308,6 @@ const App: React.FC = () => {
           onClick={() => setActiveTab('mcpTools')}
         >
           MCPツール使用状況
-        </button>
-        <button 
-          className={activeTab === 'sessions' ? 'active' : ''}
-          onClick={() => setActiveTab('sessions')}
-        >
-          セッション管理
         </button>
       </nav>
 
