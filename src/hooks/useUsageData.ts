@@ -12,29 +12,31 @@ const useUsageData = (): UseUsageDataReturn => {
       setError(null);
 
       // v2 APIを使用して必要なデータを並列取得
-      const [summaryResponse, dailyResponse, monthlyResponse, mcpLogsResponse, mcpToolsResponse, projectsResponse] = await Promise.all([
+      const [summaryResponse, dailyResponse, monthlyResponse, mcpLogsResponse, mcpToolsResponse, projectsResponse, modelsResponse] = await Promise.all([
         fetch('/api/v2/summary'),
         fetch('/api/v2/daily?limit=30'), // 最新30日分
         fetch('/api/v2/monthly?limit=12'), // 最新12ヶ月分
         fetch('/api/v2/mcp/logs?limit=100'), // 最新100ログ
         fetch('/api/v2/mcp/tools'),
-        fetch('/api/v2/projects?limit=50') // 最新50プロジェクト
+        fetch('/api/v2/projects?limit=50'), // 最新50プロジェクト
+        fetch('/api/v2/models') // モデル別使用量
       ]);
 
       // レスポンスチェック
       if (!summaryResponse.ok || !dailyResponse.ok || !monthlyResponse.ok || 
-          !mcpLogsResponse.ok || !mcpToolsResponse.ok || !projectsResponse.ok) {
+          !mcpLogsResponse.ok || !mcpToolsResponse.ok || !projectsResponse.ok || !modelsResponse.ok) {
         throw new Error('Failed to fetch usage data from v2 API');
       }
 
       // データを解析
-      const [summary, dailyData, monthlyData, mcpLogsData, mcpToolsData, projectsData] = await Promise.all([
+      const [summary, dailyData, monthlyData, mcpLogsData, mcpToolsData, projectsData, modelsData] = await Promise.all([
         summaryResponse.json(),
         dailyResponse.json(),
         monthlyResponse.json(),
         mcpLogsResponse.json(),
         mcpToolsResponse.json(),
-        projectsResponse.json()
+        projectsResponse.json(),
+        modelsResponse.json()
       ]);
 
       // v1互換のデータ構造に変換
@@ -59,7 +61,7 @@ const useUsageData = (): UseUsageDataReturn => {
         // 追加データ（v2の拡張機能）
         mcpToolUsage: mcpToolsData,
         projects: projectsData.data || [],
-        modelUsage: summary.modelUsage || []
+        modelUsage: modelsData.data || []
       };
 
       setUsageData(aggregatedData);

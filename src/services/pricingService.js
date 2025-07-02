@@ -7,6 +7,10 @@ const PRICING = {
     input: 15.00 / 1_000_000,
     output: 75.00 / 1_000_000
   },
+  'claude-sonnet-4-20250514': {
+    input: 3.00 / 1_000_000,
+    output: 15.00 / 1_000_000
+  },
   'claude-3-5-sonnet-20241022': {
     input: 3.00 / 1_000_000,
     output: 15.00 / 1_000_000
@@ -72,21 +76,30 @@ function getAllModels() {
 }
 
 function calculateUsageMetrics(usage, model) {
-  const inputTokens = usage.input_tokens || 0;
+  // Raw token counts from API
+  const newInputTokens = usage.input_tokens || 0;
   const outputTokens = usage.output_tokens || 0;
   const cacheReadTokens = usage.cache_read_input_tokens || 0;
   const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
   
-  // Total tokens including all input and cache tokens
-  const totalInputTokens = inputTokens + cacheReadTokens + cacheCreationTokens;
-  const totalTokens = totalInputTokens + outputTokens;
+  // Corrected calculations
+  const totalInputTokens = newInputTokens + cacheCreationTokens; // Only tokens charged at full price
+  const totalCacheTokens = cacheReadTokens; // Tokens charged at 10% (read from cache)
+  const totalTokens = totalInputTokens + totalCacheTokens + outputTokens;
   
-  const cost = calculateCost(model, inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens);
+  const cost = calculateCost(model, newInputTokens, outputTokens, cacheReadTokens, cacheCreationTokens);
   
   return {
-    inputTokens: totalInputTokens, // Total input including cache
-    outputTokens,
-    cachedTokens: cacheReadTokens + cacheCreationTokens,
+    // Clarified token breakdown
+    inputTokens: totalInputTokens, // New input + cache creation (full price)
+    outputTokens: outputTokens, // Output tokens
+    cachedTokens: totalCacheTokens, // Cache read tokens (10% price)
+    
+    // Detailed breakdown for analysis
+    newInputTokens, // Only new input tokens
+    cacheCreationTokens, // Cache creation tokens
+    cacheReadTokens, // Cache read tokens
+    
     totalTokens,
     cost
   };

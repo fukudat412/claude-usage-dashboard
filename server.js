@@ -13,6 +13,7 @@ const apiMonthlyRoutes = require('./src/routes/api/monthly');
 const apiMcpRoutes = require('./src/routes/api/mcp');
 const apiProjectsRoutes = require('./src/routes/api/projects');
 const apiLogsRoutes = require('./src/routes/api/logs');
+const apiModelsRoutes = require('./src/routes/api/models');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,7 @@ app.use('/api/v2/monthly', apiMonthlyRoutes);
 app.use('/api/v2/mcp', apiMcpRoutes);
 app.use('/api/v2/projects', apiProjectsRoutes);
 app.use('/api/v2/logs', apiLogsRoutes);
+app.use('/api/v2/models', apiModelsRoutes);
 
 // SPAのためのフォールバック
 app.get('*', (req, res) => {

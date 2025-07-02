@@ -73,7 +73,11 @@ async function processProjectData() {
                     cachedTokens: 0,
                     totalTokens: 0,
                     cost: 0,
-                    sessions: new Set()
+                    sessions: new Set(),
+                    // Detailed breakdown
+                    newInputTokens: 0,
+                    cacheCreationTokens: 0,
+                    cacheReadTokens: 0
                   });
                 }
                 
@@ -83,6 +87,11 @@ async function processProjectData() {
                 dayData.cachedTokens += metrics.cachedTokens;
                 dayData.totalTokens += metrics.totalTokens;
                 dayData.cost += metrics.cost;
+                
+                // Add detailed breakdown
+                dayData.newInputTokens += metrics.newInputTokens || 0;
+                dayData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
+                dayData.cacheReadTokens += metrics.cacheReadTokens || 0;
                 
                 if (data.sessionId) {
                   dayData.sessions.add(data.sessionId);
@@ -99,7 +108,11 @@ async function processProjectData() {
                     totalTokens: 0,
                     cost: 0,
                     sessions: new Set(),
-                    messages: 0
+                    messages: 0,
+                    // Detailed breakdown
+                    newInputTokens: 0,
+                    cacheCreationTokens: 0,
+                    cacheReadTokens: 0
                   });
                 }
                 
@@ -110,6 +123,11 @@ async function processProjectData() {
                 monthData.totalTokens += metrics.totalTokens;
                 monthData.messages++;
                 monthData.cost += metrics.cost;
+                
+                // Add detailed breakdown
+                monthData.newInputTokens += metrics.newInputTokens || 0;
+                monthData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
+                monthData.cacheReadTokens += metrics.cacheReadTokens || 0;
                 
                 if (data.sessionId) {
                   monthData.sessions.add(data.sessionId);
@@ -127,7 +145,11 @@ async function processProjectData() {
                     totalTokens: 0,
                     cost: 0,
                     messages: 0,
-                    sessions: new Set()
+                    sessions: new Set(),
+                    // Detailed breakdown for analysis
+                    newInputTokens: 0,
+                    cacheCreationTokens: 0,
+                    cacheReadTokens: 0
                   });
                 }
                 
@@ -138,6 +160,11 @@ async function processProjectData() {
                 modelData.totalTokens += metrics.totalTokens;
                 modelData.messages++;
                 modelData.cost += metrics.cost;
+                
+                // Add detailed breakdown
+                modelData.newInputTokens += metrics.newInputTokens || 0;
+                modelData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
+                modelData.cacheReadTokens += metrics.cacheReadTokens || 0;
                 
                 if (data.sessionId) {
                   modelData.sessions.add(data.sessionId);
