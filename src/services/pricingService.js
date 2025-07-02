@@ -3,6 +3,10 @@ const PRICING = {
     input: 15.00 / 1_000_000,
     output: 75.00 / 1_000_000
   },
+  'claude-opus-4-20250514': {
+    input: 15.00 / 1_000_000,
+    output: 75.00 / 1_000_000
+  },
   'claude-3-5-sonnet-20241022': {
     input: 3.00 / 1_000_000,
     output: 15.00 / 1_000_000
@@ -37,18 +41,26 @@ const PRICING = {
   }
 };
 
-function calculateCost(model, inputTokens = 0, outputTokens = 0, cachedTokens = 0) {
+function calculateCost(model, inputTokens = 0, outputTokens = 0, cacheReadTokens = 0, cacheCreationTokens = 0) {
   const pricing = PRICING[model];
   if (!pricing) {
     console.warn(`Unknown model: ${model}`);
     return 0;
   }
 
-  const inputCost = (inputTokens - cachedTokens) * pricing.input;
-  const cachedCost = cachedTokens * pricing.input * 0.1;
+  // New input tokens cost (full price)
+  const inputCost = inputTokens * pricing.input;
+  
+  // Cache read tokens cost (10% of input price)
+  const cacheReadCost = cacheReadTokens * pricing.input * 0.1;
+  
+  // Cache creation tokens cost (full price for creation)
+  const cacheCreationCost = cacheCreationTokens * pricing.input;
+  
+  // Output tokens cost
   const outputCost = outputTokens * pricing.output;
 
-  return inputCost + cachedCost + outputCost;
+  return inputCost + cacheReadCost + cacheCreationCost + outputCost;
 }
 
 function getModelPrice(model) {
@@ -59,9 +71,31 @@ function getAllModels() {
   return Object.keys(PRICING);
 }
 
+function calculateUsageMetrics(usage, model) {
+  const inputTokens = usage.input_tokens || 0;
+  const outputTokens = usage.output_tokens || 0;
+  const cacheReadTokens = usage.cache_read_input_tokens || 0;
+  const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
+  
+  // Total tokens including all input and cache tokens
+  const totalInputTokens = inputTokens + cacheReadTokens + cacheCreationTokens;
+  const totalTokens = totalInputTokens + outputTokens;
+  
+  const cost = calculateCost(model, inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens);
+  
+  return {
+    inputTokens: totalInputTokens, // Total input including cache
+    outputTokens,
+    cachedTokens: cacheReadTokens + cacheCreationTokens,
+    totalTokens,
+    cost
+  };
+}
+
 module.exports = {
   calculateCost,
   getModelPrice,
   getAllModels,
+  calculateUsageMetrics,
   PRICING
 };

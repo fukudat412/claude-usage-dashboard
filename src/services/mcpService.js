@@ -5,10 +5,10 @@ const { APP_CONFIG } = require('../config/paths');
 const cacheService = require('./cacheService');
 
 const CACHE_KEY = 'mcp-logs';
-const LOG_PATTERN = '**/mcp-logs-ide/*.jsonl';
+const LOG_PATTERN = '**/mcp-logs-ide/*.txt';
 
 async function parseMCPLogs() {
-  const cached = await cacheService.get(CACHE_KEY);
+  const cached = cacheService.getCache(CACHE_KEY);
   if (cached) return cached;
 
   const logs = [];
@@ -29,24 +29,63 @@ async function parseMCPLogs() {
       try {
         const stat = await fs.stat(file);
         const content = await fs.readFile(file, 'utf-8');
-        const lines = content.trim().split('\n');
+        
+        // Parse the JSON array format
+        let entries;
+        try {
+          entries = JSON.parse(content);
+          if (!Array.isArray(entries)) {
+            // Fallback to line-by-line parsing if not an array
+            const lines = content.trim().split('\n');
+            entries = lines.map(line => {
+              try {
+                return JSON.parse(line);
+              } catch (e) {
+                return null;
+              }
+            }).filter(Boolean);
+          }
+        } catch (e) {
+          // If parsing as JSON fails, try line-by-line
+          const lines = content.trim().split('\n');
+          entries = lines.map(line => {
+            try {
+              return JSON.parse(line);
+            } catch (e) {
+              return null;
+            }
+          }).filter(Boolean);
+        }
         
         const sessionTools = {};
         let sessionStartTime = null;
         let sessionEndTime = null;
         let cwd = null;
         
-        lines.forEach(line => {
+        entries.forEach(entry => {
           try {
-            const entry = JSON.parse(line);
             
             if (entry.timestamp) {
               if (!sessionStartTime) sessionStartTime = entry.timestamp;
               sessionEndTime = entry.timestamp;
             }
             
+            // Check for tool calls in different formats
+            let toolName = null;
+            
+            // Format 1: method === 'tools/call' with params.name
             if (entry.method === 'tools/call' && entry.params?.name) {
-              const toolName = entry.params.name;
+              toolName = entry.params.name;
+            }
+            // Format 2: debug field contains "Calling MCP tool: <name>"
+            else if (entry.debug && entry.debug.startsWith('Calling MCP tool:')) {
+              const match = entry.debug.match(/Calling MCP tool:\s*(.+)/);
+              if (match) {
+                toolName = match[1].trim();
+              }
+            }
+            
+            if (toolName) {
               toolUsageStats.totalCalls++;
               toolUsageStats.uniqueTools.add(toolName);
               
@@ -75,24 +114,30 @@ async function parseMCPLogs() {
           }
         });
         
-        const sessionId = path.basename(path.dirname(file));
+        // Extract project name from the file path
+        // Path format: .../claude-cli-nodejs/{project}/mcp-logs-ide/{timestamp}.txt
+        const pathParts = file.split(path.sep);
+        const mcpLogsIndex = pathParts.indexOf('mcp-logs-ide');
+        const projectName = mcpLogsIndex > 0 ? pathParts[mcpLogsIndex - 1] : 'Unknown';
+        const sessionId = path.basename(file, '.txt');
         
         logs.push({
           file: path.basename(file),
           filePath: file,
           timestamp: stat.mtime,
           size: stat.size,
-          entries: lines.length,
+          entries: entries.length,
           sessionId
         });
         
         if (Object.keys(sessionTools).length > 0) {
           toolUsageStats.sessions.push({
             sessionId,
+            projectName,
             tools: sessionTools,
             startTime: sessionStartTime,
             endTime: sessionEndTime,
-            cwd: cwd || 'Unknown',
+            cwd: cwd || projectName || 'Unknown',
             file: path.basename(file)
           });
           
@@ -131,7 +176,7 @@ async function parseMCPLogs() {
       }
     };
 
-    await cacheService.set(CACHE_KEY, result);
+    cacheService.setCache(CACHE_KEY, result);
     return result;
   } catch (error) {
     console.error('Error reading MCP logs:', error);
@@ -156,7 +201,25 @@ async function readMCPLogContent(filePath) {
   }
 }
 
+// Legacy compatibility functions
+async function getMcpLogsData() {
+  const result = await parseMCPLogs();
+  return result.logs || [];
+}
+
+async function getMcpToolUsageStats() {
+  const result = await parseMCPLogs();
+  return result.toolUsage || {
+    totalCalls: 0,
+    uniqueTools: 0,
+    tools: [],
+    sessions: []
+  };
+}
+
 module.exports = {
   parseMCPLogs,
-  readMCPLogContent
+  readMCPLogContent,
+  getMcpLogsData,
+  getMcpToolUsageStats
 };

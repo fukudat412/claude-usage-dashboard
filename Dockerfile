@@ -13,10 +13,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --only=production --legacy-peer-deps
 
 # Copy source code
 COPY . .
+
+# Install all dependencies for build
+RUN npm ci --legacy-peer-deps
 
 # Build client
 RUN npm run build
