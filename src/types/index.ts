@@ -24,7 +24,6 @@ export interface UsageData {
   };
   summary?: any;
   mcpLogs?: McpLogEntry[];
-  todos?: any[];
   vsCodeLogs?: any[];
   dailyUsage?: any[];
   monthlyUsage?: any[];

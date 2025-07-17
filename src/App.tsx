@@ -6,17 +6,19 @@ import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
 import ErrorDashboard from './components/ErrorDashboard';
 import useUsageData from './hooks/useUsageData';
+import { useVsCodeExtension } from './hooks/useVsCodeExtension';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
 
 type TabType = 'summary' | 'usage' | 'projects' | 'logs' | 'errors';
 type ViewMode = 'daily' | 'monthly';
 type UsageSubTab = 'daily' | 'monthly' | 'models';
-type ProjectsSubTab = 'projects' | 'todos';
+type ProjectsSubTab = 'projects';
 type LogsSubTab = 'mcp' | 'mcpTools';
 
 const App: React.FC = () => {
   const { usageData, loading, error, refetch } = useUsageData();
+  const { isAvailable: isVsCodeAvailable, loading: vsCodeLoading } = useVsCodeExtension();
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [selectedLog, setSelectedLog] = useState<McpLogEntry | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -55,12 +57,6 @@ const App: React.FC = () => {
     { key: 'timestamp', title: '更新日時', type: 'date' }
   ];
 
-  const todoColumns: TableColumn[] = [
-    { key: 'file', title: 'ファイル名', type: 'text' },
-    { key: 'size', title: 'サイズ', type: 'bytes' },
-    { key: 'taskCount', title: 'タスク数', type: 'number' },
-    { key: 'timestamp', title: '更新日時', type: 'date' }
-  ];
 
 
   const dailyColumns: TableColumn[] = [
@@ -144,12 +140,6 @@ const App: React.FC = () => {
           onClick={() => setProjectsSubTab('projects')}
         >
           プロジェクト・VS Code統合
-        </button>
-        <button 
-          className={projectsSubTab === 'todos' ? 'active' : ''}
-          onClick={() => setProjectsSubTab('todos')}
-        >
-          Todo履歴
         </button>
       </div>
     );
@@ -245,27 +235,23 @@ const App: React.FC = () => {
             {projectsSubTab === 'projects' && (
               <div className="sub-content">
                 <h2>プロジェクト別使用量（VS Code拡張統合）</h2>
-                <DataTable
-                  data={(usageData as any).projects || []}
-                  columns={projectColumns}
-                  onRowClick={() => {}}
-                  formatDate={formatDate}
-                  formatBytes={formatBytes}
-                  formatNumber={formatNumber}
-                />
-              </div>
-            )}
-            {projectsSubTab === 'todos' && (
-              <div className="sub-content">
-                <h2>Todo履歴</h2>
-                <DataTable
-                  data={usageData.todos || []}
-                  columns={todoColumns}
-                  onRowClick={handleLogClick}
-                  formatDate={formatDate}
-                  formatBytes={formatBytes}
-                  formatNumber={formatNumber}
-                />
+                {vsCodeLoading ? (
+                  <div className="loading">VS Code拡張機能の状態を確認中...</div>
+                ) : !isVsCodeAvailable ? (
+                  <div className="vs-code-unavailable">
+                    <p>VS Code拡張機能が利用できません。</p>
+                    <p>プロジェクト別の使用量を表示するには、Claude Code VS Code拡張機能をインストールしてください。</p>
+                  </div>
+                ) : (
+                  <DataTable
+                    data={(usageData as any).projects || []}
+                    columns={projectColumns}
+                    onRowClick={() => {}}
+                    formatDate={formatDate}
+                    formatBytes={formatBytes}
+                    formatNumber={formatNumber}
+                  />
+                )}
               </div>
             )}
           </div>

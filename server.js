@@ -15,6 +15,7 @@ const apiProjectsRoutes = require('./src/routes/api/projects');
 const apiLogsRoutes = require('./src/routes/api/logs');
 const apiModelsRoutes = require('./src/routes/api/models');
 const apiErrorsRoutes = require('./src/routes/api/errors');
+const apiVscodeRoutes = require('./src/routes/api/vscode');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +40,7 @@ app.use('/api/v2/projects', apiProjectsRoutes);
 app.use('/api/v2/logs', apiLogsRoutes);
 app.use('/api/v2/models', apiModelsRoutes);
 app.use('/api/v2/errors', apiErrorsRoutes);
+app.use('/api/v2/vscode', apiVscodeRoutes);
 
 // SPAのためのフォールバック
 app.get('*', (req, res) => {

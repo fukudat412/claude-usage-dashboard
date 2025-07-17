@@ -520,6 +520,29 @@ tr:hover {
   overflow-x: auto;
 }
 
+.vs-code-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  margin: 20px 0;
+}
+
+.vs-code-unavailable p {
+  margin: 0.5rem 0;
+  text-align: center;
+  color: #6c757d;
+}
+
+.vs-code-unavailable p:first-child {
+  font-weight: 600;
+  color: #495057;
+  font-size: 1.1rem;
+}
+
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;

@@ -4,6 +4,18 @@ const { CLAUDE_PATHS } = require('../config/paths');
 const { AppError } = require('../middleware/errorHandler');
 
 /**
+ * VS Code拡張機能が利用可能かチェック
+ */
+async function checkVsCodeExtensionAvailable() {
+  try {
+    return await fs.pathExists(CLAUDE_PATHS.vsCodeLogs);
+  } catch (error) {
+    console.log('VS Code extension check failed:', error.message);
+    return false;
+  }
+}
+
+/**
  * VS Code拡張ログデータを取得
  */
 async function getVsCodeLogsData() {
@@ -62,5 +74,6 @@ async function getVsCodeLogsData() {
 }
 
 module.exports = {
-  getVsCodeLogsData
+  getVsCodeLogsData,
+  checkVsCodeExtensionAvailable
 };

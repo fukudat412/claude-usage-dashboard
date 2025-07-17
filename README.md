@@ -11,8 +11,8 @@ Claude Codeの使用量を可視化するWebサービスです。自分のPC上�
 - **サマリー表示**: 全体的な使用統計を表示
 - **MCPログ**: Claude Code IDE統合のセッション履歴
 - **MCPツール使用状況**: 各MCPツールの詳細な使用統計と可視化
-- **Todo履歴**: タスク管理の履歴
-- **VS Code拡張**: Claude Dev拡張の使用履歴
+- **エラーログダッシュボード**: エラーログの表示・フィルタリング・分析機能
+- **VS Code拡張（オプション）**: Claude Dev拡張の使用履歴（自動検出・グレースフル対応）
 - **日別・月別使用量**: トークン使用量とコストの推移
 - **モデル別使用量**: 各AIモデルの使用統計
 - **プロジェクト別使用量**: プロジェクトごとの使用統計
@@ -208,8 +208,10 @@ npm install
 以下のClaude Codeデータを読み取ります：
 
 - **MCPログ**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
-- **Todo履歴**: `~/.claude/todos/`
-- **VS Code拡張ログ**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
+- **プロジェクトデータ**: `~/.claude/projects/`
+- **VS Code拡張ログ**（オプション）: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
+  - VS Code拡張機能が利用できない場合、自動的にユーザーフレンドリーなメッセージを表示
+  - 拡張機能の有無に関わらず、アプリケーションは正常に動作
 
 ## 技術仕様
 
@@ -235,6 +237,7 @@ claude-usage-dashboard/
 │   │   ├── DataTable.tsx
 │   │   ├── LogViewer.tsx
 │   │   ├── McpToolUsage.tsx
+│   │   ├── ErrorDashboard.tsx
 │   │   ├── SessionManager.tsx
 │   │   ├── FilterPanel.tsx
 │   │   ├── SummaryCard.tsx
@@ -244,7 +247,8 @@ claude-usage-dashboard/
 │   ├── hooks/            # カスタムフック（TypeScript）
 │   │   ├── useUsageData.ts
 │   │   ├── useSocket.ts
-│   │   └── useChartData.ts
+│   │   ├── useChartData.ts
+│   │   └── useVsCodeExtension.ts
 │   ├── utils/            # 共通ユーティリティ（TypeScript）
 │   │   └── formatters.ts
 │   ├── types/            # 型定義
@@ -259,10 +263,12 @@ claude-usage-dashboard/
 │   │       ├── daily.js
 │   │       ├── monthly.js
 │   │       ├── mcp.js
-│   │       └── projects.js
+│   │       ├── projects.js
+│   │       ├── errors.js
+│   │       └── vscode.js
 │   ├── services/         # ビジネスロジック（TypeScript）
 │   │   ├── mcpService.ts
-│   │   ├── todoService.js
+│   │   ├── errorLogService.ts
 │   │   ├── vscodeService.js
 │   │   ├── projectService.js
 │   │   ├── pricingService.ts
@@ -290,8 +296,8 @@ claude-usage-dashboard/
 - **Routes**: APIエンドポイントの定義
 - **Services**: ビジネスロジックの実装
   - `mcpService.js`: MCPログ解析とツール使用統計
-  - `todoService.js`: Todo履歴の読み取り
-  - `vscodeService.js`: VS Code拡張データ処理
+  - `errorLogService.ts`: エラーログの分析・フィルタリング機能
+  - `vscodeService.js`: VS Code拡張データ処理（オプション対応）
   - `projectService.js`: プロジェクト別使用量集計
   - `pricingService.js`: 料金計算ロジック
   - `cacheService.js`: キャッシュ管理
@@ -302,12 +308,14 @@ claude-usage-dashboard/
 - **Components**: 型安全な再利用可能なUIコンポーネント
   - `Dashboard.tsx`: サマリーダッシュボード（完全型付け）
   - `McpToolUsage.tsx`: MCPツール使用状況の可視化（チャート・統計）
+  - `ErrorDashboard.tsx`: エラーログの表示・フィルタリング・分析機能
   - `UsageChart.tsx`: トークン使用量チャート（インタラクティブ機能付き）
   - `SessionManager.tsx`: WebSocketベースのセッション管理
   - `FilterPanel.tsx`: 高度なフィルタリング機能
   - `DataTable.tsx`: 汎用データテーブル（ジェネリック型対応）
   - `InteractiveChart.tsx`: エクスポート・ドリルダウン機能付きチャート
 - **Hooks**: TypeScript化されたカスタムフック（データフェッチ・WebSocket等）
+  - `useVsCodeExtension.ts`: VS Code拡張機能の可用性チェック
 - **Types**: 包括的な型定義（`src/types/index.ts`）
 - **Utils**: 型安全な共通ユーティリティ関数
 
@@ -343,7 +351,40 @@ Claude Codeのローカルデータディレクトリを読み取り専用でマ
 - **HSTS**: HTTP Strict Transport Security
 - **MIME Sniffing防止**: X-Content-Type-Options設定
 
-## 最近の修正内容（v1.1.0）
+## 最近の改善内容（v1.2.0）
+
+### 🚀 新機能・改善
+
+#### エラーログダッシュボード
+- エラーログの表示・フィルタリング・分析機能を追加
+- レベル別（ERROR、WARNING、CRITICAL、INFO）でのフィルタリング
+- 統計情報の表示（エラー数、重要度分析）
+- 類似エラーの自動検出機能
+
+#### VS Code拡張機能のオプション化
+- VS Code拡張機能の有無を自動検出
+- 拡張機能が利用できない場合のユーザーフレンドリーなメッセージ表示
+- 拡張機能の可用性チェック用API (`/api/v2/vscode/available`)
+- グレースフルなフォールバック機能
+
+#### 機能の最適化
+- Todo履歴機能を削除（個人使用に特化）
+- 不要な機能の削除によるパフォーマンス向上
+- UIの一貫性改善
+
+### 🔧 技術的改善
+
+#### 型安全性の向上
+- `useVsCodeExtension`フックの追加
+- エラーログ関連の型定義追加
+- API レスポンスの型安全性向上
+
+#### アーキテクチャの改善
+- モジュラー構成の強化
+- サービス層の分離
+- 条件付きレンダリングの実装
+
+## 以前の修正内容（v1.1.0）
 
 ### 🐛 バグ修正
 

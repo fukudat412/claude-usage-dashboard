@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { getMcpLogsData, getMcpToolUsageStats } = require('../../services/mcpService');
-const { getTodosData } = require('../../services/todoService');
 const { getVsCodeLogsData } = require('../../services/vscodeService');
 const { processProjectData } = require('../../services/projectService');
 const cacheService = require('../../services/cacheService');
@@ -12,12 +11,10 @@ const cacheService = require('../../services/cacheService');
  */
 function generateSummary(data) {
   const totalMcpSessions = data.mcpLogs?.length || 0;
-  const totalTodoFiles = data.todos?.length || 0;
   const totalVsCodeTasks = data.vsCodeLogs?.length || 0;
   
   const totalSize = [
-    ...(data.mcpLogs?.map(log => log.size || 0) || []),
-    ...(data.todos?.map(todo => todo.size || 0) || [])
+    ...(data.mcpLogs?.map(log => log.size || 0) || [])
   ].reduce((sum, size) => sum + size, 0);
 
   const totalMessages = (data.vsCodeLogs || []).reduce((sum, log) => sum + (log.messageCount || 0), 0);
@@ -29,14 +26,13 @@ function generateSummary(data) {
 
   return {
     totalMcpSessions,
-    totalTodoFiles,
     totalVsCodeTasks,
     totalSize,
     totalMessages,
     totalConversations,
     totalTokens,
     totalCost,
-    lastActivity: data.mcpLogs?.[0]?.timestamp || data.todos?.[0]?.timestamp || null
+    lastActivity: data.mcpLogs?.[0]?.timestamp || null
   };
 }
 
@@ -57,9 +53,8 @@ router.get('/', asyncHandler(async (req, res) => {
   const startTime = Date.now();
   
   // 軽量なデータのみ取得
-  const [mcpLogs, todos, vsCodeLogs] = await Promise.all([
+  const [mcpLogs, vsCodeLogs] = await Promise.all([
     getMcpLogsData(),
-    getTodosData(),
     getVsCodeLogsData()
   ]);
   
@@ -68,7 +63,6 @@ router.get('/', asyncHandler(async (req, res) => {
   
   const data = {
     mcpLogs,
-    todos,
     vsCodeLogs,
     dailyUsage: projectData.dailyUsage
   };
