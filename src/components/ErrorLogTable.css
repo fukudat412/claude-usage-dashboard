@@ -1,0 +1,155 @@
+.error-log-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.error-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+.error-table th,
+.error-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.error-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.error-table th:hover {
+  background-color: #eeeeee;
+}
+
+.error-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.error-row:hover {
+  background-color: #f8f9fa;
+}
+
+.error-log-table-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.loading-spinner {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error-log-table-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.timestamp {
+  font-family: monospace;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.error-level {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.error-level-critical {
+  background-color: #f44336;
+  color: white;
+}
+
+.error-level-error {
+  background-color: #ff9800;
+  color: white;
+}
+
+.error-level-warning {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.error-level-info {
+  background-color: #2196f3;
+  color: white;
+}
+
+.error-code {
+  font-family: monospace;
+  font-weight: bold;
+  color: #0066cc;
+}
+
+.error-message {
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.error-source {
+  font-family: monospace;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error-status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.error-status.resolved {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.error-status.unresolved {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error-level-warning {
+    color: white;
+  }
+  
+  .error-code {
+    color: #66b3ff;
+  }
+  
+  .error-source {
+    color: #ccc;
+  }
+  
+  .error-status.resolved {
+    background-color: #1b5e20;
+    color: #a5d6a7;
+  }
+  
+  .error-status.unresolved {
+    background-color: #b71c1c;
+    color: #ef9a9a;
+  }
+}

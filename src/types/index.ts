@@ -170,3 +170,78 @@ export interface ErrorResponse {
   statusCode: number;
   timestamp: string;
 }
+
+// Error Log Dashboard types
+export interface ErrorLog {
+  id: string;
+  timestamp: Date;
+  level: 'ERROR' | 'WARNING' | 'CRITICAL' | 'INFO';
+  message: string;
+  code?: string;
+  stackTrace?: string;
+  source?: string;
+  context?: Record<string, any>;
+  userId?: string;
+  sessionId?: string;
+  requestInfo?: {
+    method?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    body?: any;
+  };
+  resolved?: boolean;
+  resolvedAt?: Date;
+  resolvedBy?: string;
+  notes?: string;
+}
+
+export interface ErrorFilter {
+  startDate?: Date;
+  endDate?: Date;
+  levels?: ('ERROR' | 'WARNING' | 'CRITICAL' | 'INFO')[];
+  sources?: string[];
+  errorCodes?: string[];
+  search?: string;
+  resolved?: boolean;
+  userId?: string;
+  sessionId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ErrorStats {
+  totalErrors: number;
+  errorsByLevel: Record<string, number>;
+  errorsBySource: Record<string, number>;
+  errorsByCode: Record<string, number>;
+  errorsByTime: {
+    timestamp: Date;
+    count: number;
+  }[];
+  topErrors: {
+    code: string;
+    message: string;
+    count: number;
+  }[];
+}
+
+export interface NotificationRule {
+  id: string;
+  name: string;
+  conditions: {
+    levels?: ('ERROR' | 'WARNING' | 'CRITICAL' | 'INFO')[];
+    sources?: string[];
+    errorCodes?: string[];
+    frequency?: {
+      count: number;
+      timeWindow: number; // milliseconds
+    };
+  };
+  actions: {
+    type: 'EMAIL' | 'SYSTEM_NOTIFICATION' | 'WEBHOOK';
+    config: Record<string, any>;
+  }[];
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

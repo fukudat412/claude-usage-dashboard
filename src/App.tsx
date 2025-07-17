@@ -4,11 +4,12 @@ import Dashboard from './components/Dashboard';
 import DataTable, { TableColumn } from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
+import ErrorDashboard from './components/ErrorDashboard';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
 
-type TabType = 'summary' | 'usage' | 'projects' | 'logs';
+type TabType = 'summary' | 'usage' | 'projects' | 'logs' | 'errors';
 type ViewMode = 'daily' | 'monthly';
 type UsageSubTab = 'daily' | 'monthly' | 'models';
 type ProjectsSubTab = 'projects' | 'todos';
@@ -295,6 +296,13 @@ const App: React.FC = () => {
           </div>
         );
 
+      case 'errors':
+        return (
+          <div className="tab-content">
+            <ErrorDashboard />
+          </div>
+        );
+
       default:
         return null;
     }
@@ -333,6 +341,12 @@ const App: React.FC = () => {
           onClick={() => setActiveTab('logs')}
         >
           ログ・ツール
+        </button>
+        <button 
+          className={activeTab === 'errors' ? 'active' : ''}
+          onClick={() => setActiveTab('errors')}
+        >
+          エラーログ
         </button>
       </nav>
 
