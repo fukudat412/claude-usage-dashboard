@@ -196,13 +196,13 @@ async function processProjectData() {
       ...day,
       cost: day.cost.toFixed(4),
       sessions: day.sessions.size
-    })).sort((a, b) => new Date(b.date) - new Date(a.date));
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
     
     const monthlyData = Array.from(usageByMonth.values()).map(month => ({
       ...month,
       cost: month.cost.toFixed(4),
       sessions: month.sessions.size
-    })).sort((a, b) => b.month.localeCompare(a.month));
+    })).sort((a, b) => a.month.localeCompare(b.month));
     
     const modelData = Array.from(usageByModel.values()).map(model => ({
       ...model,
