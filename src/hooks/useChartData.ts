@@ -81,7 +81,7 @@ export function useChartData(
   const [dateRange, setDateRange] = useState<DateRange | null>(initialDateRange);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(initialMetrics);
   const [searchText, setSearchText] = useState<string>('');
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'asc' });
   const [filters, setFilters] = useState<ChartFilters>({
     minCost: filterThresholds.minCost || 0,
     minTokens: filterThresholds.minTokens || 0,

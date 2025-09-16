@@ -199,7 +199,7 @@ const App: React.FC = () => {
               <div className="sub-content">
                 <h2>日別使用量</h2>
                 <DataTable
-                  data={usageData.daily || []}
+                  data={[...(usageData.daily || [])].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())}
                   columns={dailyColumns}
                   onRowClick={() => {}}
                   formatDate={formatDate}
