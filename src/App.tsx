@@ -5,6 +5,7 @@ import DataTable, { TableColumn } from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
 import HourlyAnalysis from './components/HourlyAnalysis';
+import DailyHourlyDetail from './components/DailyHourlyDetail';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const { usageData, loading, error, refetch } = useUsageData();
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [selectedLog, setSelectedLog] = useState<McpLogEntry | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [usageSubTab, setUsageSubTab] = useState<UsageSubTab>('daily');
   const [projectsSubTab, setProjectsSubTab] = useState<ProjectsSubTab>('projects');
@@ -129,6 +131,14 @@ const App: React.FC = () => {
     setSelectedLog(null);
   };
 
+  const handleDailyRowClick = (row: Record<string, any>): void => {
+    setSelectedDate(row.date as string);
+  };
+
+  const closeDailyHourlyDetail = (): void => {
+    setSelectedDate(null);
+  };
+
   const renderUsageSubTabs = (): React.ReactNode => {
     return (
       <div className="sub-tabs">
@@ -226,7 +236,7 @@ const App: React.FC = () => {
                 <DataTable
                   data={[...(usageData.daily || [])].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())}
                   columns={dailyColumns}
-                  onRowClick={() => {}}
+                  onRowClick={handleDailyRowClick}
                   formatDate={formatDate}
                   formatBytes={formatBytes}
                   formatNumber={formatNumber}
@@ -393,6 +403,14 @@ const App: React.FC = () => {
           selectedLog={selectedLog}
           onClose={closeLogViewer}
           formatDate={formatDate}
+        />
+      )}
+
+      {selectedDate && (
+        <DailyHourlyDetail
+          date={selectedDate}
+          onClose={closeDailyHourlyDetail}
+          formatNumber={formatNumber}
         />
       )}
     </div>

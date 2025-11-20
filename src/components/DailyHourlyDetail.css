@@ -1,0 +1,294 @@
+.daily-hourly-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.daily-hourly-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.daily-hourly-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.daily-hourly-modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.daily-close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.daily-close-btn:hover {
+  background: #f3f4f6;
+  color: #333;
+}
+
+.daily-hourly-modal-body {
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.daily-hourly-chart {
+  margin-bottom: 2rem;
+}
+
+.daily-hourly-chart h4 {
+  margin: 0 0 1.5rem 0;
+  color: #555;
+  font-size: 1.1rem;
+}
+
+.chart-container-daily {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.chart-grid-daily {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+  height: 250px;
+  padding: 1rem 0;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.chart-bar-group-daily {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.chart-bars-daily {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  gap: 1px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.chart-bar-daily {
+  flex: 1;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.chart-bar-daily:hover {
+  opacity: 0.8;
+  transform: scaleY(1.05);
+}
+
+.cost-bar-daily {
+  background: linear-gradient(to top, #667eea, #764ba2);
+}
+
+.token-bar-daily {
+  background: linear-gradient(to top, #f59e0b, #f97316);
+}
+
+.chart-label-daily {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.chart-legend-daily {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.legend-item-daily {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.legend-color-daily {
+  width: 20px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.cost-color-daily {
+  background: linear-gradient(to right, #667eea, #764ba2);
+}
+
+.token-color-daily {
+  background: linear-gradient(to right, #f59e0b, #f97316);
+}
+
+.daily-hourly-table-section {
+  margin-top: 2rem;
+}
+
+.daily-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.daily-summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.25rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.daily-summary-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+
+.daily-summary-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.daily-hourly-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.daily-hourly-table th {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.daily-hourly-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.daily-hourly-table tr:hover {
+  background: #f8f9fa;
+}
+
+.hour-cell-daily {
+  font-weight: 600;
+  color: #667eea;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.time-badge-daily {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.cost-cell-daily {
+  font-weight: 600;
+  color: #059669;
+}
+
+.no-data-daily {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+  font-size: 1rem;
+}
+
+.loading-daily {
+  text-align: center;
+  padding: 3rem;
+  color: #667eea;
+  font-size: 1rem;
+}
+
+.error-daily {
+  text-align: center;
+  padding: 3rem;
+  color: #ef4444;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .daily-hourly-modal-overlay {
+    padding: 1rem;
+  }
+
+  .daily-hourly-modal-body {
+    padding: 1rem;
+  }
+
+  .chart-grid-daily {
+    gap: 0.2rem;
+    height: 200px;
+  }
+
+  .chart-label-daily {
+    font-size: 0.6rem;
+  }
+
+  .daily-summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-hourly-table {
+    font-size: 0.8rem;
+  }
+
+  .daily-hourly-table th,
+  .daily-hourly-table td {
+    padding: 0.5rem;
+  }
+}
