@@ -38,7 +38,15 @@ const PRICING_RATES: Record<string, PricingRate> = {
     cacheCreate: 0.00000375, // $3.75 per MTok
     cacheRead: 0.0000003    // $0.30 per MTok
   },
-  
+
+  // Claude 3.5 Sonnet (新バージョン)
+  'claude-sonnet-4-5-20250929': {
+    input: 0.000003,        // $3 per MTok
+    output: 0.000015,       // $15 per MTok
+    cacheCreate: 0.00000375, // $3.75 per MTok
+    cacheRead: 0.0000003    // $0.30 per MTok
+  },
+
   // Claude 3 Opus
   'claude-3-opus': {
     input: 0.000015,        // $15 per MTok
@@ -46,9 +54,17 @@ const PRICING_RATES: Record<string, PricingRate> = {
     cacheCreate: 0.00001875, // $18.75 per MTok
     cacheRead: 0.0000015    // $1.50 per MTok
   },
-  
+
   // Claude 3 Haiku
   'claude-3-haiku': {
+    input: 0.00000025,      // $0.25 per MTok
+    output: 0.00000125,     // $1.25 per MTok
+    cacheCreate: 0.0000003, // $0.30 per MTok
+    cacheRead: 0.00000003   // $0.03 per MTok
+  },
+
+  // Claude 3 Haiku (新バージョン)
+  'claude-haiku-4-5-20251001': {
     input: 0.00000025,      // $0.25 per MTok
     output: 0.00000125,     // $1.25 per MTok
     cacheCreate: 0.0000003, // $0.30 per MTok
@@ -63,15 +79,33 @@ export function getPricingRates(model?: string): PricingRate {
   if (!model) {
     return PRICING_RATES['claude-3-5-sonnet']; // デフォルト
   }
-  
+
   // モデル名の正規化
   const normalizedModel = model.toLowerCase();
-  
+
+  // 完全一致を優先的にチェック
+  if (PRICING_RATES[normalizedModel]) {
+    return PRICING_RATES[normalizedModel];
+  }
+
+  // パターンマッチング
   if (normalizedModel.includes('opus')) {
     return PRICING_RATES['claude-3-opus'];
   } else if (normalizedModel.includes('haiku')) {
+    // 新しいHaikuバージョンを優先
+    if (normalizedModel.includes('4-5') || normalizedModel.includes('20251001')) {
+      return PRICING_RATES['claude-haiku-4-5-20251001'];
+    }
     return PRICING_RATES['claude-3-haiku'];
+  } else if (normalizedModel.includes('sonnet')) {
+    // 新しいSonnetバージョンを優先
+    if (normalizedModel.includes('4-5') || normalizedModel.includes('20250929')) {
+      return PRICING_RATES['claude-sonnet-4-5-20250929'];
+    }
+    return PRICING_RATES['claude-3-5-sonnet'];
   } else {
+    // モデル名が認識できない場合は警告を出力
+    console.warn(`Unknown model: ${model}`);
     return PRICING_RATES['claude-3-5-sonnet']; // デフォルト
   }
 }
