@@ -113,6 +113,34 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     }
   };
 
+  // Date presets
+  const applyDatePreset = (days: number | 'thisMonth' | 'lastMonth' | 'all'): void => {
+    const now = new Date();
+    let start: Date;
+    let end: Date = now;
+
+    if (days === 'thisMonth') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (days === 'lastMonth') {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      end = new Date(now.getFullYear(), now.getMonth(), 0);
+    } else if (days === 'all') {
+      // Clear date filter
+      setLocalDateRange({ start: '', end: '' });
+      onDateRangeChange('', '');
+      return;
+    } else {
+      start = new Date(now);
+      start.setDate(start.getDate() - days);
+    }
+
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
+    setLocalDateRange({ start: startStr, end: endStr });
+    onDateRangeChange(startStr, endStr);
+  };
+
   const getFilterSummary = (): string[] => {
     const activeFilters: string[] = [];
 
@@ -197,6 +225,23 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           {/* 日付範囲フィルター */}
           <div className="filter-group">
             <label>期間</label>
+            <div className="date-presets">
+              <button onClick={() => applyDatePreset(7)} className="preset-btn" title="直近7日間">
+                7日間
+              </button>
+              <button onClick={() => applyDatePreset(30)} className="preset-btn" title="直近30日間">
+                30日間
+              </button>
+              <button onClick={() => applyDatePreset('thisMonth')} className="preset-btn" title="今月">
+                今月
+              </button>
+              <button onClick={() => applyDatePreset('lastMonth')} className="preset-btn" title="先月">
+                先月
+              </button>
+              <button onClick={() => applyDatePreset('all')} className="preset-btn" title="全期間">
+                全期間
+              </button>
+            </div>
             <div className="date-range">
               <input
                 type="date"

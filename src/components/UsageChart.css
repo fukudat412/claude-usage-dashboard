@@ -7,31 +7,36 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  padding: 15px;
-  background: #f8f9fa;
+  padding: 10px 15px;
+  background: #fafbfc;
   border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e7eb;
 }
 
-.chart-type-controls {
+.chart-type-controls-compact {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 
-.chart-type-controls label {
-  font-weight: 500;
-  color: #555;
-  font-size: 14px;
-}
-
-.chart-type-controls select {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
+.chart-type-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   background: white;
-  font-size: 14px;
-  min-width: 150px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chart-type-select:hover {
+  border-color: #9ca3af;
+}
+
+.chart-type-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .active-filters-info {
@@ -40,57 +45,55 @@
   gap: 10px;
 }
 
-.filter-info {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 13px;
+.filter-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 500;
 }
 
-.chart-summary {
-  margin-top: 20px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+.chart-summary-compact {
+  margin-top: 15px;
+  padding: 12px 20px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
-.chart-summary h4 {
-  margin: 0 0 15px 0;
-  color: #333;
-  font-size: 1.1em;
+.summary-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-}
-
-.summary-item {
+.stat-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border-left: 4px solid #2196f3;
+  align-items: center;
+  gap: 2px;
 }
 
-.summary-label {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
+.stat-item strong {
+  font-size: 16px;
+  color: #111827;
+  font-weight: 600;
+}
+
+.stat-item small {
+  font-size: 11px;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.summary-value {
-  font-size: 16px;
-  color: #333;
-  font-weight: 600;
+.stat-separator {
+  color: #d1d5db;
+  font-size: 18px;
+  font-weight: 300;
 }
 
 .no-data {

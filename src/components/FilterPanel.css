@@ -119,6 +119,13 @@
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
+.date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
 .date-range {
   display: flex;
   align-items: center;

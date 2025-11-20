@@ -24,14 +24,14 @@ interface UsageChartProps {
 
 type ChartType = 'area' | 'line' | 'bar';
 
-const UsageChart: React.FC<UsageChartProps> = ({ 
-  data, 
-  viewMode, 
-  formatNumber, 
-  enableFilters = true 
+const UsageChart: React.FC<UsageChartProps> = ({
+  data,
+  viewMode,
+  formatNumber,
+  enableFilters = true
 }) => {
   const [chartType, setChartType] = useState<ChartType>('area');
-  const [filtersCollapsed, setFiltersCollapsed] = useState<boolean>(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState<boolean>(true);
 
   const {
     data: filteredData,
@@ -85,26 +85,26 @@ const UsageChart: React.FC<UsageChartProps> = ({
       )}
 
       <div className="chart-controls-extended">
-        <div className="chart-type-controls">
-          <label htmlFor="chart-type">チャート種類:</label>
+        {hasActiveFilters && (
+          <div className="active-filters-info">
+            <span className="filter-badge">
+              フィルター適用中: {filteredData.length}/{statistics.totalItems}件
+            </span>
+          </div>
+        )}
+        <div className="chart-type-controls-compact">
           <select
             id="chart-type"
             value={chartType}
             onChange={(e) => setChartType(e.target.value as ChartType)}
+            className="chart-type-select"
+            title="チャート種類を選択"
           >
-            <option value="area">エリアチャート</option>
-            <option value="line">ラインチャート</option>
-            <option value="bar">バーチャート</option>
+            <option value="area">エリア</option>
+            <option value="line">ライン</option>
+            <option value="bar">バー</option>
           </select>
         </div>
-
-        {hasActiveFilters && (
-          <div className="active-filters-info">
-            <span className="filter-info">
-              {statistics.totalItems}件中 {filteredData.length}件を表示
-            </span>
-          </div>
-        )}
       </div>
 
       <InteractiveChart
@@ -119,25 +119,22 @@ const UsageChart: React.FC<UsageChartProps> = ({
       />
 
       {statistics && filteredData.length > 0 && (
-        <div className="chart-summary">
-          <h4>データサマリー</h4>
-          <div className="summary-grid">
-            <div className="summary-item">
-              <span className="summary-label">表示件数:</span>
-              <span className="summary-value">{statistics.totalItems}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-label">総コスト:</span>
-              <span className="summary-value">${statistics.totalCost.toFixed(2)}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-label">総トークン:</span>
-              <span className="summary-value">{formatNumber(statistics.totalTokens)}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-label">平均コスト:</span>
-              <span className="summary-value">${statistics.avgCost.toFixed(2)}</span>
-            </div>
+        <div className="chart-summary-compact">
+          <div className="summary-stats">
+            <span className="stat-item">
+              <strong>${statistics.totalCost.toFixed(2)}</strong>
+              <small>総コスト</small>
+            </span>
+            <span className="stat-separator">|</span>
+            <span className="stat-item">
+              <strong>{formatNumber(statistics.totalTokens)}</strong>
+              <small>総トークン</small>
+            </span>
+            <span className="stat-separator">|</span>
+            <span className="stat-item">
+              <strong>{statistics.totalItems}件</strong>
+              <small>表示期間</small>
+            </span>
           </div>
         </div>
       )}
