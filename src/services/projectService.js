@@ -21,6 +21,7 @@ async function processProjectData() {
     const usageByMonth = new Map();
     const usageByModel = new Map();
     const projects = [];
+    const detailedUsage = []; // Store detailed entries with timestamps
     
     // 並列でプロジェクトディレクトリを処理
     await Promise.all(projectDirs.map(async (projectDir) => {
@@ -59,9 +60,26 @@ async function processProjectData() {
               const usage = data.message.usage;
               const timestamp = data.timestamp;
               const model = data.message.model;
-              
+
               const metrics = calculateUsageMetrics(usage, model);
-              
+
+              // Store detailed entry with timestamp for time-based filtering
+              if (timestamp) {
+                detailedUsage.push({
+                  timestamp,
+                  sessionId: data.sessionId,
+                  model,
+                  inputTokens: metrics.inputTokens,
+                  outputTokens: metrics.outputTokens,
+                  cachedTokens: metrics.cachedTokens,
+                  totalTokens: metrics.totalTokens,
+                  cost: metrics.cost,
+                  newInputTokens: metrics.newInputTokens || 0,
+                  cacheCreationTokens: metrics.cacheCreationTokens || 0,
+                  cacheReadTokens: metrics.cacheReadTokens || 0
+                });
+              }
+
               // 日毎データ
               if (timestamp) {
                 const date = new Date(timestamp).toISOString().split('T')[0];
@@ -211,12 +229,16 @@ async function processProjectData() {
     })).sort((a, b) => b.totalTokens - a.totalTokens);
     
     projects.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
-    
+
+    // Sort detailed usage by timestamp
+    detailedUsage.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
     return {
       dailyUsage: dailyData,
       monthlyUsage: monthlyData,
       modelUsage: modelData,
-      projects
+      projects,
+      detailedUsage
     };
   } catch (error) {
     console.error('Error processing project data:', error);

@@ -24,6 +24,11 @@ interface ChartFilters {
   maxTokens: number;
 }
 
+interface TimeRange {
+  startHour: number | null;
+  endHour: number | null;
+}
+
 interface SortConfig {
   key: string;
   direction: 'asc' | 'desc';
@@ -50,11 +55,13 @@ interface UseChartDataReturn {
   chartData: ChartDataPoint[];
   statistics: ChartStatistics;
   dateRange: DateRange | null;
+  timeRange: TimeRange;
   selectedMetrics: string[];
   searchText: string;
   sortConfig: SortConfig;
   filters: ChartFilters;
   updateDateRange: (start: string, end: string) => void;
+  updateTimeRange: (startHour: number | null, endHour: number | null) => void;
   clearDateRange: () => void;
   updateFilters: (newFilters: Partial<ChartFilters>) => void;
   clearFilters: () => void;
@@ -79,6 +86,7 @@ export function useChartData(
   } = options;
 
   const [dateRange, setDateRange] = useState<DateRange | null>(initialDateRange);
+  const [timeRange, setTimeRange] = useState<TimeRange>({ startHour: null, endHour: null });
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(initialMetrics);
   const [searchText, setSearchText] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'asc' });
@@ -218,6 +226,10 @@ export function useChartData(
     setDateRange({ start, end });
   };
 
+  const updateTimeRange = (startHour: number | null, endHour: number | null): void => {
+    setTimeRange({ startHour, endHour });
+  };
+
   const clearDateRange = (): void => {
     setDateRange(null);
   };
@@ -235,6 +247,7 @@ export function useChartData(
     });
     setSearchText('');
     setDateRange(null);
+    setTimeRange({ startHour: null, endHour: null });
   };
 
   const updateSort = (key: string, direction: 'asc' | 'desc'): void => {
@@ -268,28 +281,30 @@ export function useChartData(
     data: sortedData,
     chartData,
     statistics,
-    
+
     // フィルタ状態
     dateRange,
+    timeRange,
     selectedMetrics,
     searchText,
     sortConfig,
     filters,
-    
+
     // フィルタ更新関数
     updateDateRange,
+    updateTimeRange,
     clearDateRange,
     updateFilters,
     clearFilters,
     updateSort,
     toggleMetric,
     setSearchText: debouncedSetSearchText,
-    
+
     // ユーティリティ
-    hasActiveFilters: !!(dateRange || searchText || 
+    hasActiveFilters: !!(dateRange || timeRange.startHour !== null || timeRange.endHour !== null || searchText ||
       filters.minCost > 0 || filters.minTokens > 0 ||
       filters.maxCost < Infinity || filters.maxTokens < Infinity),
-    
+
     isEmpty: sortedData.length === 0,
     isFiltered: rawData?.length !== sortedData.length
   };

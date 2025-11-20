@@ -7,6 +7,11 @@ interface DateRange {
   end: string;
 }
 
+interface TimeRange {
+  startHour: number | null;
+  endHour: number | null;
+}
+
 interface Filters {
   minCost: number;
   maxCost: number;
@@ -24,6 +29,8 @@ interface Statistics {
 interface FilterPanelProps {
   dateRange: DateRange | null;
   onDateRangeChange: (start: string, end: string) => void;
+  timeRange?: TimeRange;
+  onTimeRangeChange?: (startHour: number | null, endHour: number | null) => void;
   filters: Filters;
   onFiltersChange: (filters: Partial<Filters>) => void;
   searchText: string;
@@ -43,6 +50,8 @@ interface LocalDateRange {
 const FilterPanel: React.FC<FilterPanelProps> = ({
   dateRange,
   onDateRangeChange,
+  timeRange,
+  onTimeRangeChange,
   filters,
   onFiltersChange,
   searchText,
@@ -56,6 +65,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   const [localDateRange, setLocalDateRange] = useState<LocalDateRange>({
     start: dateRange?.start || '',
     end: dateRange?.end || ''
+  });
+
+  const [localTimeRange, setLocalTimeRange] = useState<TimeRange>({
+    startHour: timeRange?.startHour ?? null,
+    endHour: timeRange?.endHour ?? null
   });
 
   const handleDateChange = (field: keyof LocalDateRange, value: string): void => {
@@ -72,33 +86,66 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     onFiltersChange({ [key]: numericValue });
   };
 
+  const handleTimeChange = (field: keyof TimeRange, value: string): void => {
+    const numericValue = value === '' ? null : parseInt(value);
+    const newRange = { ...localTimeRange, [field]: numericValue };
+    setLocalTimeRange(newRange);
+
+    if (onTimeRangeChange) {
+      onTimeRangeChange(newRange.startHour, newRange.endHour);
+    }
+  };
+
+  // Time presets
+  const timePresets = [
+    { label: '全日', start: null, end: null },
+    { label: '朝 (6-12)', start: 6, end: 12 },
+    { label: '昼 (12-18)', start: 12, end: 18 },
+    { label: '夜 (18-24)', start: 18, end: 23 },
+    { label: '深夜 (0-6)', start: 0, end: 6 },
+    { label: '勤務時間 (9-17)', start: 9, end: 17 }
+  ];
+
+  const applyTimePreset = (start: number | null, end: number | null): void => {
+    setLocalTimeRange({ startHour: start, endHour: end });
+    if (onTimeRangeChange) {
+      onTimeRangeChange(start, end);
+    }
+  };
+
   const getFilterSummary = (): string[] => {
     const activeFilters: string[] = [];
-    
+
     if (dateRange) {
       activeFilters.push(`期間: ${format(new Date(dateRange.start), 'M/d')} - ${format(new Date(dateRange.end), 'M/d')}`);
     }
-    
+
+    if (timeRange && (timeRange.startHour !== null || timeRange.endHour !== null)) {
+      const start = timeRange.startHour ?? 0;
+      const end = timeRange.endHour ?? 23;
+      activeFilters.push(`時間帯: ${start}:00 - ${end}:00`);
+    }
+
     if (searchText) {
       activeFilters.push(`検索: "${searchText}"`);
     }
-    
+
     if (filters.minCost > 0) {
       activeFilters.push(`最小コスト: $${filters.minCost}`);
     }
-    
+
     if (filters.maxCost < Infinity) {
       activeFilters.push(`最大コスト: $${filters.maxCost}`);
     }
-    
+
     if (filters.minTokens > 0) {
       activeFilters.push(`最小トークン: ${filters.minTokens.toLocaleString()}`);
     }
-    
+
     if (filters.maxTokens < Infinity) {
       activeFilters.push(`最大トークン: ${filters.maxTokens.toLocaleString()}`);
     }
-    
+
     return activeFilters;
   };
 
@@ -166,6 +213,56 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               />
             </div>
           </div>
+
+          {/* 時間帯フィルター */}
+          {onTimeRangeChange && (
+            <div className="filter-group">
+              <label>時間帯</label>
+
+              {/* Time presets */}
+              <div className="time-presets">
+                {timePresets.map((preset, index) => (
+                  <button
+                    key={index}
+                    className={`preset-btn ${
+                      localTimeRange.startHour === preset.start &&
+                      localTimeRange.endHour === preset.end
+                        ? 'active'
+                        : ''
+                    }`}
+                    onClick={() => applyTimePreset(preset.start, preset.end)}
+                    type="button"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom time range */}
+              <div className="time-range">
+                <input
+                  type="number"
+                  min="0"
+                  max="23"
+                  placeholder="開始時"
+                  value={localTimeRange.startHour ?? ''}
+                  onChange={(e) => handleTimeChange('startHour', e.target.value)}
+                  className="time-input"
+                />
+                <span className="time-separator">:00 〜</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="23"
+                  placeholder="終了時"
+                  value={localTimeRange.endHour ?? ''}
+                  onChange={(e) => handleTimeChange('endHour', e.target.value)}
+                  className="time-input"
+                />
+                <span className="time-separator">:00</span>
+              </div>
+            </div>
+          )}
 
           {/* コストフィルター */}
           <div className="filter-group">

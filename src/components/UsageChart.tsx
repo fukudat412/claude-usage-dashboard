@@ -38,10 +38,12 @@ const UsageChart: React.FC<UsageChartProps> = ({
     chartData,
     statistics,
     dateRange,
+    timeRange,
     filters,
     searchText,
     hasActiveFilters,
     updateDateRange,
+    updateTimeRange,
     updateFilters,
     setSearchText,
     clearFilters
@@ -68,6 +70,8 @@ const UsageChart: React.FC<UsageChartProps> = ({
         <FilterPanel
           dateRange={dateRange}
           onDateRangeChange={updateDateRange}
+          timeRange={timeRange}
+          onTimeRangeChange={updateTimeRange}
           filters={filters}
           onFiltersChange={updateFilters}
           searchText={searchText}

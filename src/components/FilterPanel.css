@@ -101,7 +101,8 @@
 
 .search-input,
 .date-input,
-.range-input {
+.range-input,
+.time-input {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -111,7 +112,8 @@
 
 .search-input:focus,
 .date-input:focus,
-.range-input:focus {
+.range-input:focus,
+.time-input:focus {
   outline: none;
   border-color: #2196f3;
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
@@ -124,9 +126,52 @@
 }
 
 .date-separator,
-.range-separator {
+.range-separator,
+.time-separator {
   color: #666;
   font-size: 14px;
+}
+
+/* Time range specific styles */
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-input {
+  width: 70px;
+  text-align: center;
+}
+
+.time-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.preset-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.preset-btn:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.preset-btn.active {
+  background: #2196f3;
+  color: white;
+  border-color: #2196f3;
 }
 
 .range-inputs {
