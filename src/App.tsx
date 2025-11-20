@@ -4,13 +4,14 @@ import Dashboard from './components/Dashboard';
 import DataTable, { TableColumn } from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
+import HourlyAnalysis from './components/HourlyAnalysis';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
 
 type TabType = 'summary' | 'usage' | 'projects' | 'logs';
 type ViewMode = 'daily' | 'monthly';
-type UsageSubTab = 'daily' | 'monthly' | 'models';
+type UsageSubTab = 'daily' | 'monthly' | 'models' | 'hourly';
 type ProjectsSubTab = 'projects' | 'todos';
 type LogsSubTab = 'mcp' | 'mcpTools';
 
@@ -131,19 +132,25 @@ const App: React.FC = () => {
   const renderUsageSubTabs = (): React.ReactNode => {
     return (
       <div className="sub-tabs">
-        <button 
+        <button
           className={usageSubTab === 'daily' ? 'active' : ''}
           onClick={() => setUsageSubTab('daily')}
         >
           日別使用量
         </button>
-        <button 
+        <button
           className={usageSubTab === 'monthly' ? 'active' : ''}
           onClick={() => setUsageSubTab('monthly')}
         >
           月別使用量
         </button>
-        <button 
+        <button
+          className={usageSubTab === 'hourly' ? 'active' : ''}
+          onClick={() => setUsageSubTab('hourly')}
+        >
+          時間帯別分析
+        </button>
+        <button
           className={usageSubTab === 'models' ? 'active' : ''}
           onClick={() => setUsageSubTab('models')}
         >
@@ -235,6 +242,14 @@ const App: React.FC = () => {
                   onRowClick={() => {}}
                   formatDate={formatDate}
                   formatBytes={formatBytes}
+                  formatNumber={formatNumber}
+                />
+              </div>
+            )}
+            {usageSubTab === 'hourly' && (
+              <div className="sub-content">
+                <h2>時間帯別使用量分析</h2>
+                <HourlyAnalysis
                   formatNumber={formatNumber}
                 />
               </div>
