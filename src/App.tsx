@@ -23,6 +23,24 @@ const App: React.FC = () => {
   const [projectsSubTab, setProjectsSubTab] = useState<ProjectsSubTab>('projects');
   const [logsSubTab, setLogsSubTab] = useState<LogsSubTab>('mcp');
 
+  // キーボードショートカット: Rキーで更新
+  React.useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') {
+        // 入力フィールドにフォーカスがある場合は無視
+        if (document.activeElement?.tagName === 'INPUT' ||
+            document.activeElement?.tagName === 'TEXTAREA') {
+          return;
+        }
+        e.preventDefault();
+        refetch();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [refetch]);
+
   if (loading) {
     return (
       <div className="App">
@@ -304,8 +322,23 @@ const App: React.FC = () => {
     <div className="App">
       <header className="App-header">
         <h1>Claude Code 使用量ダッシュボード</h1>
-        <button onClick={refetch} className="refresh-button">
-          データを更新
+        <button
+          onClick={refetch}
+          className={`refresh-button ${loading ? 'loading' : ''}`}
+          disabled={loading}
+          title="データを再読み込み (R キー)"
+        >
+          {loading ? (
+            <>
+              <span className="spinner"></span>
+              更新中...
+            </>
+          ) : (
+            <>
+              <span className="refresh-icon">↻</span>
+              データを更新
+            </>
+          )}
         </button>
       </header>
 
