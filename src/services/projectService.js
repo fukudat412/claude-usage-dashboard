@@ -233,12 +233,19 @@ async function processProjectData() {
     // Sort detailed usage by timestamp
     detailedUsage.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
+    // 全期間のユニークセッション数を計算
+    const allSessions = new Set();
+    usageByDate.forEach(day => {
+      day.sessions.forEach(sessionId => allSessions.add(sessionId));
+    });
+
     return {
       dailyUsage: dailyData,
       monthlyUsage: monthlyData,
       modelUsage: modelData,
       projects,
-      detailedUsage
+      detailedUsage,
+      totalSessions: allSessions.size
     };
   } catch (error) {
     console.error('Error processing project data:', error);

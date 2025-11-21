@@ -104,15 +104,33 @@ router.get('/', async (req, res) => {
       cellData.requests += 1;
     });
 
-    // 時間帯別データを配列に変換
-    const hourlyData = Array.from(hourlyMap.values())
-      .map(data => ({
-        ...data,
-        sessions: data.sessions.size,
-        avgCostPerRequest: data.requests > 0 ? data.cost / data.requests : 0,
-        avgTokensPerRequest: data.requests > 0 ? data.totalTokens / data.requests : 0
-      }))
-      .sort((a, b) => a.hour - b.hour);
+    // 時間帯別データを配列に変換（0-23時まで全て含める）
+    const hourlyData = [];
+    for (let hour = 0; hour < 24; hour++) {
+      const data = hourlyMap.get(hour);
+      if (data) {
+        hourlyData.push({
+          ...data,
+          sessions: data.sessions.size,
+          avgCostPerRequest: data.requests > 0 ? data.cost / data.requests : 0,
+          avgTokensPerRequest: data.requests > 0 ? data.totalTokens / data.requests : 0
+        });
+      } else {
+        // データがない時間帯は0で埋める
+        hourlyData.push({
+          hour,
+          inputTokens: 0,
+          outputTokens: 0,
+          cachedTokens: 0,
+          totalTokens: 0,
+          cost: 0,
+          sessions: 0,
+          requests: 0,
+          avgCostPerRequest: 0,
+          avgTokensPerRequest: 0
+        });
+      }
+    }
 
     // ヒートマップデータを配列に変換
     const heatmapData = [];

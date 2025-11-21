@@ -23,14 +23,8 @@ function generateSummary(data) {
   // プロジェクトデータから総メッセージ数と総セッション数（会話数）を集計
   const totalMessages = (data.monthlyUsage || []).reduce((sum, month) => sum + (month.messages || 0), 0);
 
-  // 全セッションを集めてユニーク数を計算
-  const allSessions = new Set();
-  (data.dailyUsage || []).forEach(day => {
-    if (day.sessions) {
-      day.sessions.forEach(sessionId => allSessions.add(sessionId));
-    }
-  });
-  const totalConversations = allSessions.size;
+  // projectServiceから計算済みの全期間ユニークセッション数を取得
+  const totalConversations = data.totalSessions || 0;
 
   // 日毎の使用量データから総計を計算
   const totalTokens = (data.dailyUsage || []).reduce((sum, day) => sum + day.totalTokens, 0);
@@ -80,7 +74,8 @@ router.get('/', asyncHandler(async (req, res) => {
     todos,
     vsCodeLogs,
     dailyUsage: projectData.dailyUsage,
-    monthlyUsage: projectData.monthlyUsage
+    monthlyUsage: projectData.monthlyUsage,
+    totalSessions: projectData.totalSessions
   };
 
   const summary = generateSummary(data);
