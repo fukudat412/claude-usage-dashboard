@@ -5,47 +5,74 @@ A web service for visualizing Claude Code usage data from local PC. This applica
 ## Project Overview
 
 ### Architecture
-- **Backend**: Node.js + Express (Modular architecture with services, routes, middleware)
-- **Frontend**: React (Component-based with custom hooks)
+- **Backend**: Node.js + Express + TypeScript (Modular architecture with services, routes, middleware)
+- **Frontend**: React + TypeScript (Fully type-safe with strict mode)
 - **Container**: Docker (Multi-stage build with Alpine Linux)
-- **Data Sources**: Local Claude Code files (MCP logs, todos, VS Code extension data)
+- **Data Sources**: Local Claude Code files (MCP logs, projects, optional VS Code extension data)
 
 ### Project Structure
 ```
 claude-usage-dashboard/
 ├── package.json           # Unified package.json (Flat structure)
+├── tsconfig.json         # TypeScript configuration (strict mode)
 ├── server.js             # Express server entry point
 ├── src/
-│   ├── components/        # React components
-│   │   ├── Dashboard.js
-│   │   ├── DataTable.js
-│   │   ├── LogViewer.js
-│   │   ├── SummaryCard.js
-│   │   └── UsageChart.js
-│   ├── hooks/            # Custom hooks
-│   │   └── useUsageData.js
-│   ├── utils/            # Common utilities
-│   │   └── formatters.js
+│   ├── components/        # React components (TypeScript)
+│   │   ├── Dashboard.tsx
+│   │   ├── DataTable.tsx
+│   │   ├── LogViewer.tsx
+│   │   ├── McpToolUsage.tsx      # MCP tool usage statistics
+│   │   ├── ErrorDashboard.tsx    # Error log dashboard
+│   │   ├── ErrorFilterPanel.tsx
+│   │   ├── ErrorLogViewer.tsx
+│   │   ├── SessionManager.tsx    # WebSocket session management
+│   │   ├── FilterPanel.tsx
+│   │   ├── SummaryCard.tsx
+│   │   ├── UsageChart.tsx
+│   │   └── charts/
+│   │       └── InteractiveChart.tsx
+│   ├── hooks/            # Custom hooks (TypeScript)
+│   │   ├── useUsageData.ts
+│   │   ├── useSocket.ts
+│   │   ├── useChartData.ts
+│   │   ├── useErrorLogs.ts
+│   │   └── useVsCodeExtension.ts  # VS Code extension availability check
+│   ├── utils/            # Common utilities (TypeScript)
+│   │   └── formatters.ts
+│   ├── types/            # Type definitions
+│   │   └── index.ts
 │   ├── routes/           # Express routes
 │   │   ├── usage.js
 │   │   ├── logs.js
-│   │   └── health.js
-│   ├── services/         # Business logic
-│   │   ├── mcpService.js
-│   │   ├── todoService.js
+│   │   ├── health.js
+│   │   ├── sessions.js
+│   │   └── api/          # API v2 endpoints
+│   │       ├── summary.js
+│   │       ├── daily.js
+│   │       ├── monthly.js
+│   │       ├── mcp.js
+│   │       ├── projects.js
+│   │       ├── errors.js
+│   │       └── vscode.js
+│   ├── services/         # Business logic (TypeScript)
+│   │   ├── mcpService.ts
+│   │   ├── errorLogService.ts
 │   │   ├── vscodeService.js
 │   │   ├── projectService.js
-│   │   ├── pricingService.js
-│   │   └── cacheService.js
-│   ├── middleware/       # Express middleware
-│   │   └── errorHandler.js
-│   ├── config/          # Configuration
-│   │   └── paths.js
-│   ├── App.js           # Main React component
-│   └── index.js         # React entry point
+│   │   ├── pricingService.ts
+│   │   ├── cacheService.js
+│   │   └── socketService.js
+│   ├── middleware/       # Express middleware (TypeScript)
+│   │   ├── errorHandler.ts
+│   │   └── security.js
+│   ├── config/          # Configuration (TypeScript)
+│   │   └── paths.ts
+│   ├── App.tsx          # Main React component (TypeScript)
+│   └── index.tsx        # React entry point (TypeScript)
 ├── public/              # React public files
 ├── build/               # React build output
 ├── docs/                # Project documentation
+├── mcp-server/          # MCP server implementation
 ├── Dockerfile           # Production Docker config
 ├── Dockerfile.dev       # Development Docker config
 └── docker-compose.yml   # Docker Compose config
@@ -97,39 +124,77 @@ docker-compose down
 ## Data Sources
 
 The application reads data from these Claude Code locations:
-- **MCP Logs**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
-- **Todo History**: `~/.claude/todos/`
-- **VS Code Extension**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
+- **MCP Logs**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/` (supports both .jsonl and .txt formats)
+- **Project Data**: `~/.claude/projects/`
+- **VS Code Extension** (Optional): `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
+  - Automatically detects availability via `/api/v2/vscode/available`
+  - Gracefully handles missing extension with user-friendly messages
 
 ## Key Components
 
-### Backend Services
-- **mcpService.js**: Processes MCP session logs
-- **todoService.js**: Handles todo file management data
-- **vscodeService.js**: Processes VS Code extension task data
+### Backend Services (TypeScript)
+- **mcpService.ts**: Processes MCP session logs, extracts tool usage statistics
+  - Supports both JSON array and JSON Lines formats
+  - Extracts tool names from `debug` fields
+  - Calculates per-tool and per-session statistics
+- **errorLogService.ts**: Error log analysis and filtering
+  - Level-based filtering (ERROR, WARNING, CRITICAL, INFO)
+  - Statistics and similar error detection
+- **vscodeService.js**: Processes VS Code extension task data (optional)
 - **projectService.js**: Aggregates usage data by project/date/model
-- **pricingService.js**: Calculates costs based on Claude pricing
+- **pricingService.ts**: Calculates costs with accurate cache token pricing
+  - Cache read: 10% cost
+  - Cache write: 100% cost
+  - Claude Opus 4 pricing support
 - **cacheService.js**: In-memory caching for performance
+- **socketService.js**: WebSocket-based session management
 
-### Frontend Components
-- **Dashboard.js**: Main overview with summary cards and charts
-- **DataTable.js**: Reusable table component with sorting/formatting
-- **LogViewer.js**: Modal for viewing log file contents
-- **UsageChart.js**: Recharts-based visualization
-- **useUsageData.js**: Custom hook for data fetching
+### Frontend Components (TypeScript)
+- **Dashboard.tsx**: Main overview with type-safe summary cards and charts
+- **McpToolUsage.tsx**: MCP tool usage visualization
+  - Bar/Pie charts with top 10 tools
+  - Session history and detailed statistics tables
+- **ErrorDashboard.tsx**: Error log display, filtering, and analysis
+  - Level-based filters
+  - Statistics display
+  - Similar error detection
+- **DataTable.tsx**: Generic reusable table with type safety (uses generics)
+- **LogViewer.tsx**: Modal for viewing log file contents
+- **UsageChart.tsx**: Interactive charts with export/drill-down features
+- **InteractiveChart.tsx**: Export and filtering capabilities
+- **useUsageData.ts**: Type-safe custom hook for data fetching
+- **useVsCodeExtension.ts**: VS Code extension availability checker
+- **useErrorLogs.ts**: Error log data management hook
 
 ### Security Features
-- Path traversal prevention in log content endpoint
-- Input validation and sanitization
-- Non-root Docker user execution
-- Read-only volume mounts
-- CORS configuration
+- **Path traversal prevention** in log content endpoint
+- **Input validation and sanitization**
+- **Non-root Docker user** execution (nodejs:1001)
+- **Read-only volume mounts** for all data directories
+- **Helmet.js**: Comprehensive security headers
+- **CSP**: Content Security Policy for content restriction
+- **CORS**: Proper cross-origin configuration
+- **Rate limiting**: DoS protection (1000 requests per 15 minutes)
+- **XSS prevention**: XSS filter enabled
+- **Clickjacking prevention**: X-Frame-Options configured
+- **HSTS**: HTTP Strict Transport Security
+- **MIME Sniffing prevention**: X-Content-Type-Options set
 
 ## API Endpoints
 
+### Core Endpoints
 - `GET /api/usage` - Complete usage data
 - `GET /api/health` - Health check
 - `GET /api/log-content/:type/:filename` - Log file content (secure)
+
+### API v2 Endpoints
+- `GET /api/v2/summary` - Summary statistics
+- `GET /api/v2/daily` - Daily usage data
+- `GET /api/v2/monthly` - Monthly usage data
+- `GET /api/v2/mcp` - MCP logs and tool usage statistics
+- `GET /api/v2/projects` - Project-based usage data
+- `GET /api/v2/errors` - Error logs with filtering
+- `GET /api/v2/vscode/available` - VS Code extension availability check
 
 ## Build & Deployment
 
@@ -151,11 +216,21 @@ The application reads data from these Claude Code locations:
 ## Development Guidelines
 
 ### Coding Standards
-- Use modern JavaScript (ES6+)
-- Follow React functional component patterns
-- Implement proper error handling with custom error classes
-- Use meaningful variable and function names
-- Maintain consistent code formatting
+- **TypeScript strict mode**: All code must pass strict type checking
+- **Type definitions**: Use comprehensive type definitions from `src/types/index.ts`
+- **React functional components**: Use TypeScript with proper typing
+- **Error handling**: Implement with custom error classes (AppError)
+- **Naming conventions**: Use meaningful, type-safe variable and function names
+- **Code formatting**: Maintain consistent TypeScript formatting
+- **Generic types**: Utilize generics for reusable components (e.g., DataTable<T>)
+
+### TypeScript Best Practices
+- Define interfaces for all data structures
+- Use type inference where appropriate
+- Avoid `any` type unless absolutely necessary
+- Utilize union types and type guards
+- Implement proper null/undefined handling
+- Use const assertions for literal types
 
 ### CSS Architecture
 - Use BEM-like naming convention
@@ -188,22 +263,37 @@ npm run test:coverage
 ## Common Development Tasks
 
 ### Adding New Data Source
-1. Create service file in `src/services/`
-2. Implement data processing logic
-3. Add route in `src/routes/usage.js`
-4. Update frontend components as needed
+1. Create TypeScript service file in `src/services/` with proper types
+2. Define interfaces in `src/types/index.ts`
+3. Implement type-safe data processing logic
+4. Add route in `src/routes/api/`
+5. Create custom hook in `src/hooks/` if needed
+6. Update frontend components with proper typing
 
 ### Modifying UI Components
-1. Update component in `src/components/`
-2. Update corresponding CSS in `src/App.css`
-3. Test responsive design
-4. Rebuild Docker image if needed
+1. Update `.tsx` component in `src/components/`
+2. Ensure proper TypeScript typing
+3. Update corresponding CSS file (component-scoped)
+4. Test responsive design
+5. Run type checking: `npm run typecheck`
+6. Rebuild Docker image if needed
 
 ### Performance Optimization
-1. Check caching implementation in services
-2. Optimize data processing algorithms
-3. Consider pagination for large datasets
-4. Monitor memory usage
+1. Verify caching implementation in services
+2. Optimize data processing algorithms in TypeScript
+3. Use React.memo for expensive components
+4. Consider pagination for large datasets
+5. Monitor memory usage and type safety overhead
+6. Profile with React DevTools
+
+### Adding New Features
+1. Design type-safe interfaces first
+2. Implement backend service with TypeScript
+3. Create API endpoint with proper error handling
+4. Build React component with full typing
+5. Create custom hook for state management
+6. Add comprehensive error handling
+7. Update documentation
 
 ## Troubleshooting
 
@@ -236,11 +326,75 @@ curl http://localhost:3001/api/health
 
 - In-memory caching reduces file I/O
 - Data is processed once and cached
-- Efficient sorting and filtering algorithms
+- Efficient sorting and filtering algorithms with TypeScript optimization
 - Responsive design minimizes data transfer
+- Type-safe operations reduce runtime errors
+- Component memoization for expensive renders
+
+## Key Features
+
+### 1. Complete TypeScript Migration
+- **Strict mode** enabled in tsconfig.json
+- **Comprehensive type definitions** in `src/types/index.ts`
+- **Generic components** for type-safe reusability (e.g., DataTable<T>)
+- **Type-safe hooks** for data fetching and state management
+- **IDE support** with full autocomplete and type checking
+
+### 2. MCP Tool Usage Statistics
+- **Total call counts** across all MCP tools
+- **Per-tool statistics** with first/last usage timestamps
+- **Session-based analysis** showing tool usage per session
+- **Visualizations**: Bar charts (top 10 tools), Pie charts (usage distribution)
+- **Detailed tables** with comprehensive statistics
+
+### 3. Error Log Dashboard
+- **Level-based filtering**: ERROR, WARNING, CRITICAL, INFO
+- **Statistics display**: Error counts, severity analysis
+- **Similar error detection**: Automatic grouping of related errors
+- **Comprehensive search**: Filter by level, message, timestamp
+- **User-friendly interface**: Easy navigation and analysis
+
+### 4. VS Code Extension Integration (Optional)
+- **Automatic detection**: Checks availability via API
+- **Graceful fallback**: User-friendly messages when unavailable
+- **No breaking changes**: App works with or without extension
+- **useVsCodeExtension hook**: Type-safe availability checking
+
+### 5. Session Management
+- **WebSocket support**: Real-time session communication
+- **Main/Sub sessions**: Create and manage multiple sessions
+- **MCP server**: Custom implementation for orchestration
+- **Status tracking**: Monitor session states in real-time
+
+### 6. Accurate Usage Calculations
+- **Cache token pricing**: Correct 10%/100% cost calculation
+- **Claude Opus 4 support**: Latest model pricing
+- **Multi-format support**: Both .jsonl and .txt MCP logs
+- **Project extraction**: Accurate project name parsing from logs
+
+## Current Status (v1.2.0+)
+
+### Recent Improvements
+- ✅ Full TypeScript migration with strict mode
+- ✅ Error log dashboard implementation
+- ✅ MCP tool usage statistics and visualization
+- ✅ VS Code extension made optional with graceful handling
+- ✅ Todo history feature removed (personal use optimization)
+- ✅ Improved security with Helmet.js and rate limiting
+- ✅ Docker development environment with hot reload
+- ✅ Comprehensive type safety across all components
+
+### Current Metrics
+- **Total Tokens**: ~475M tokens tracked
+- **Total Cost**: ~$460 calculated
+- **Data Sources**: MCP logs, Projects, Optional VS Code extension
+- **Security**: Multiple layers of protection
+- **Performance**: Optimized with caching and type safety
 
 ---
 
 **Access the dashboard**: http://localhost:3001
+
+**Branch**: `dashboard-optimization` (personal use optimizations)
 
 For detailed improvement suggestions, see `docs/improvement-suggestions.md`
