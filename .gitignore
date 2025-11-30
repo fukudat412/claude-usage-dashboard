@@ -168,3 +168,8 @@ videos/
 Icon?
 ehthumbs.db
 Thumbs.db
+
+# Rust
+rust-benchmark/target/
+**/target/
+Cargo.lock
