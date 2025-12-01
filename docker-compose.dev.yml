@@ -45,7 +45,7 @@ services:
     environment:
       - NODE_ENV=development
       - LOG_LEVEL=debug
-      - USE_RUST_BACKEND=true
+      - USE_RUST_BACKEND=false
       - RUST_BACKEND_URL=http://rust-backend:8080
       - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
       - WATCHPACK_POLLING=true
