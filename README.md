@@ -145,8 +145,8 @@ docker-compose -f docker-compose.dev.yml down
 - **永続キャッシュ**: Cargoキャッシュをボリュームで保持（ビルド高速化）
 
 開発環境では以下のポートが利用可能です：
-- http://localhost:3000 - React開発サーバー（ホットリロード対応）
-- http://localhost:3001 - Expressサーバー（nodemon対応）
+- http://localhost:30000 - React開発サーバー（ホットリロード対応）
+- http://localhost:30001 - Expressサーバー（nodemon対応）
 - http://localhost:8080 - Rustバックエンド（cargo-watch対応）
 
 #### 従来版（Node.jsのみ）
@@ -159,7 +159,7 @@ docker-compose up -d
 # または手動でDockerコンテナを実行
 docker build -t claude-usage-dashboard .
 docker run -d --name claude-dashboard \
-  -p 3001:3001 \
+  -p 30001:30001 \
   -v ~/.claude:/home/nodejs/.claude:ro \
   -v ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro \
   -v ~/Library/Application\ Support/Code:/home/nodejs/Library/Application\ Support/Code:ro \
@@ -179,8 +179,8 @@ docker-compose --profile dev logs -f
 ```
 
 開発環境では以下のポートが利用可能です：
-- http://localhost:3000 - React開発サーバー（ホットリロード対応）
-- http://localhost:3001 - Expressサーバー（nodemon対応）
+- http://localhost:30000 - React開発サーバー（ホットリロード対応）
+- http://localhost:30001 - Expressサーバー（nodemon対応）
 
 #### Dockerコンテナの管理
 ```bash
@@ -191,7 +191,7 @@ docker-compose down
 docker-compose logs -f
 
 # ヘルスチェック
-curl http://localhost:3001/api/health
+curl http://localhost:30001/api/health
 ```
 
 ### ローカルでの実行

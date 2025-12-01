@@ -63,7 +63,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "proxy": "http://localhost:3001",
+  "proxy": "http://localhost:30001",
   "homepage": ".",
   "browserslist": {
     "production": [

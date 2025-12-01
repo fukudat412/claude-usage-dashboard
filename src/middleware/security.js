@@ -38,9 +38,9 @@ function configureSecurityMiddleware(app) {
   app.use(cors({
     origin: function(origin, callback) {
       // 開発環境では複数のオリジンを許可
-      const allowedOrigins = process.env.NODE_ENV === 'production' 
-        ? ['http://localhost:3001'] 
-        : ['http://localhost:3000', 'http://localhost:3001'];
+      const allowedOrigins = process.env.NODE_ENV === 'production'
+        ? ['http://localhost:30001']
+        : ['http://localhost:30000', 'http://localhost:30001'];
       
       // オリジンが未定義（直接アクセス）または許可リストに含まれる場合
       if (!origin || allowedOrigins.includes(origin)) {

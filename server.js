@@ -18,7 +18,7 @@ const apiLogsRoutes = require('./src/routes/api/logs');
 const apiModelsRoutes = require('./src/routes/api/models');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 30001;
 
 // セキュリティミドルウェアの設定
 configureSecurityMiddleware(app);

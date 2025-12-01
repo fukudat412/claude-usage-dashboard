@@ -12,14 +12,14 @@ sleep 2
 
 # ポートの確認
 echo "ポートの確認中..."
-if lsof -i:3000 -t >/dev/null 2>&1; then
-    echo "⚠️  ポート3000が使用中です"
-    lsof -i:3000
+if lsof -i:30000 -t >/dev/null 2>&1; then
+    echo "⚠️  ポート30000が使用中です"
+    lsof -i:30000
 fi
 
-if lsof -i:3001 -t >/dev/null 2>&1; then
-    echo "⚠️  ポート3001が使用中です"
-    lsof -i:3001
+if lsof -i:30001 -t >/dev/null 2>&1; then
+    echo "⚠️  ポート30001が使用中です"
+    lsof -i:30001
 fi
 
 # サーバーを起動

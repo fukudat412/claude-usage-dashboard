@@ -50,16 +50,16 @@ COPY --from=builder --chown=nodejs:nodejs /app/build ./build
 USER nodejs
 
 # Expose port
-EXPOSE 3001
+EXPOSE 30001
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=30001
 ENV LOG_LEVEL=info
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+    CMD node -e "require('http').get('http://localhost:30001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # Start application with dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
