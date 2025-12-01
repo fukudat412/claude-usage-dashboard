@@ -2,6 +2,22 @@
 
 Claude Codeの使用量を可視化するWebサービスです。自分のPC上のClaude Codeデータを読み取り、使用状況を確認できます。
 
+## 🚀 NEW: Rust Backend Migration
+
+**2.8倍のパフォーマンス向上を達成！**
+
+主要なAPIエンドポイントをRust（Axum）で実装し、大幅な速度向上を実現しました。詳細は [RUST_MIGRATION.md](./RUST_MIGRATION.md) を参照してください。
+
+| 実装 | レスポンス時間 | 改善率 |
+|---|---|---|
+| Node.js | 108ms | 基準 |
+| **Rust** | **39ms** | **2.8倍高速** |
+
+**Rustバックエンドを有効にする:**
+```bash
+USE_RUST_BACKEND=true npm run dev
+```
+
 ## 新機能：セッション管理
 
 メインセッションからMCP経由でサブセッションを作成・管理できるようになりました。
