@@ -22,11 +22,11 @@ services:
       - rust-cargo-cache:/usr/local/cargo/registry
       - rust-target-cache:/app/target
       # Claude configuration (read-only)
-      - ~/.claude:/root/.claude:ro
+      - ${HOME}/.claude:/root/.claude:ro
       # MCP logs (read-only)
-      - ~/Library/Caches/claude-cli-nodejs:/root/Library/Caches/claude-cli-nodejs:ro
+      - ${HOME}/Library/Caches/claude-cli-nodejs:/root/Library/Caches/claude-cli-nodejs:ro
       # VS Code extension data (read-only)
-      - ~/Library/Application Support/Code:/root/Library/Application Support/Code:ro
+      - ${HOME}/Library/Application Support/Code:/root/Library/Application Support/Code:ro
     networks:
       - claude-dev-network
     restart: unless-stopped
@@ -56,6 +56,12 @@ services:
       - /app/node_modules
       # Exclude build directory
       - /app/build
+      # Claude configuration (read-only)
+      - ${HOME}/.claude:/root/.claude:ro
+      # MCP logs (read-only)
+      - ${HOME}/Library/Caches/claude-cli-nodejs:/root/Library/Caches/claude-cli-nodejs:ro
+      # VS Code extension data (read-only)
+      - ${HOME}/Library/Application Support/Code:/root/Library/Application Support/Code:ro
     depends_on:
       - rust-backend
     networks:
