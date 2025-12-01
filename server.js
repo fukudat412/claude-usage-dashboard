@@ -26,8 +26,10 @@ configureSecurityMiddleware(app);
 // JSON パース
 app.use(express.json());
 
-// 静的ファイルの提供（Reactビルド）
-app.use(express.static(path.join(__dirname, 'build')));
+// 静的ファイルの提供（Reactビルド） - 本番環境のみ
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'build')));
+}
 
 // v1 APIルートは削除済み（v2に移行）
 
@@ -76,10 +78,12 @@ if (USE_RUST_BACKEND) {
   app.use('/api/v2/models', apiModelsRoutes);
 }
 
-// SPAのためのフォールバック
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+// SPAのためのフォールバック - 本番環境のみ
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+}
 
 // 404ハンドラー
 app.use(notFound);

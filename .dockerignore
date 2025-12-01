@@ -1,0 +1,57 @@
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+.yarn
+
+# Build outputs
+build
+dist
+*.log
+
+# Development
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Testing
+coverage
+.nyc_output
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Rust (for multi-stage builds, we exclude Rust files in root)
+rust-backend/target
+rust-backend/.cargo
+
+# Cache
+.cache
+.parcel-cache
+
+# Misc
+.dockerignore
+Dockerfile*
+docker-compose*.yml

@@ -17,12 +17,11 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Expose port
-EXPOSE 3001
+# Expose ports
+EXPOSE 3000 3001
 
 # Set environment variables for development
 ENV NODE_ENV=development
-ENV PORT=3001
 ENV LOG_LEVEL=debug
 
 # Start application with nodemon for hot reload

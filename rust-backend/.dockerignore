@@ -1,0 +1,33 @@
+# Rust build outputs
+target
+*.rs.bk
+*.pdb
+
+# Cargo
+.cargo
+Cargo.lock.bk
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+
+# Documentation
+*.md
+docs
+
+# Testing
+coverage
+
+# Logs
+*.log

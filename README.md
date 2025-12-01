@@ -114,6 +114,41 @@ docker-compose -f docker-compose.rust.yml down
 - Node.jsプロキシ: 約10-20MB
 - 合計: 約15-35MB
 
+**詳細**: パフォーマンス比較や技術詳細は [DOCKER_RUST.md](./DOCKER_RUST.md) を参照してください。
+
+#### 🔧 Rust対応版開発環境（ホットリロード対応）
+
+Rust + Node.jsの開発環境（cargo-watch対応）:
+
+```bash
+# 開発環境を起動（ホットリロード対応）
+docker-compose -f docker-compose.dev.yml up
+
+# バックグラウンドで実行
+docker-compose -f docker-compose.dev.yml up -d
+
+# ログ確認（全体）
+docker-compose -f docker-compose.dev.yml logs -f
+
+# 特定サービスのログ
+docker-compose -f docker-compose.dev.yml logs -f rust-backend
+docker-compose -f docker-compose.dev.yml logs -f node-dev
+
+# 停止
+docker-compose -f docker-compose.dev.yml down
+```
+
+**特徴**:
+- **Rustホットリロード**: cargo-watchによる自動再コンパイル
+- **Reactホットリロード**: ソースコード変更時に自動リロード
+- **開発ログ**: DEBUG レベルのログ出力
+- **永続キャッシュ**: Cargoキャッシュをボリュームで保持（ビルド高速化）
+
+開発環境では以下のポートが利用可能です：
+- http://localhost:3000 - React開発サーバー（ホットリロード対応）
+- http://localhost:3001 - Expressサーバー（nodemon対応）
+- http://localhost:8080 - Rustバックエンド（cargo-watch対応）
+
 #### 従来版（Node.jsのみ）
 
 #### 本番環境
