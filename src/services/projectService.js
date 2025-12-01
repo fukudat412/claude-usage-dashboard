@@ -3,11 +3,12 @@ const path = require('path');
 const { CLAUDE_PATHS } = require('../config/paths');
 const { AppError } = require('../middleware/errorHandler');
 const { calculateUsageMetrics } = require('./pricingService');
+const { processProjectDataWithRust, isRustProcessorAvailable } = require('./rustProcessor');
 
 /**
- * 統合されたプロジェクトデータ処理
+ * Node.js実装のプロジェクトデータ処理
  */
-async function processProjectData() {
+async function processProjectDataNodeJS() {
   try {
     if (!(await fs.pathExists(CLAUDE_PATHS.projects))) {
       console.log('Projects directory not found');
@@ -253,6 +254,36 @@ async function processProjectData() {
   }
 }
 
+/**
+ * プロジェクトデータ処理のエントリーポイント
+ * Rustプロセッサを優先的に使用し、失敗時はNode.js実装にフォールバック
+ */
+async function processProjectData() {
+  const startTime = Date.now();
+
+  // Rustプロセッサが利用可能かチェック
+  if (isRustProcessorAvailable()) {
+    console.log('[Hybrid] Attempting to use Rust processor...');
+    const rustResult = processProjectDataWithRust();
+
+    if (rustResult) {
+      console.log(`[Hybrid] Successfully processed with Rust in ${Date.now() - startTime}ms`);
+      return rustResult;
+    }
+
+    console.log('[Hybrid] Rust processor failed, falling back to Node.js implementation');
+  } else {
+    console.log('[Hybrid] Rust processor not available, using Node.js implementation');
+  }
+
+  // Node.js実装にフォールバック
+  console.log('[Hybrid] Processing with Node.js...');
+  const nodeResult = await processProjectDataNodeJS();
+  console.log(`[Hybrid] Successfully processed with Node.js in ${Date.now() - startTime}ms`);
+  return nodeResult;
+}
+
 module.exports = {
-  processProjectData
+  processProjectData,
+  processProjectDataNodeJS // テスト用にexport
 };
