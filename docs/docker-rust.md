@@ -1,5 +1,7 @@
 # Rust対応Docker構成ドキュメント
 
+> **注記 (2026-07)**: 本ドキュメントが説明するRust用Docker構成（Dockerfile.rust / Dockerfile.proxy / docker-compose.rust.yml）は2026-07に削除されました（git履歴から復元可能）。歴史的記録として保存しています。
+
 ## 概要
 
 Rustバックエンドを含めたDocker構成により、イメージサイズとメモリ使用量を大幅に削減しました。
