@@ -15,6 +15,7 @@ const apiMcpRoutes = require('./src/routes/api/mcp');
 const apiProjectsRoutes = require('./src/routes/api/projects');
 const apiLogsRoutes = require('./src/routes/api/logs');
 const apiModelsRoutes = require('./src/routes/api/models');
+const apiHealthRoutes = require('./src/routes/api/health');
 
 const app = express();
 const PORT = process.env.PORT || 30001;
@@ -31,6 +32,9 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // v1 APIルートは削除済み（v2に移行）
+
+// ヘルスチェック
+app.use('/api/health', apiHealthRoutes);
 
 // API v2ルート
 app.use('/api/v2/summary', apiSummaryRoutes);

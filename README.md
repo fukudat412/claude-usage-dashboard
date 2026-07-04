@@ -109,7 +109,7 @@ docker-compose down
 docker-compose logs -f
 
 # ヘルスチェック
-curl http://localhost:30001/api/v2/summary
+curl http://localhost:30001/api/health
 ```
 
 ### ローカルでの実行
