@@ -245,6 +245,29 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
+/* テーブルツールバー（CSVエクスポート） */
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.csv-export-button {
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #555;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.csv-export-button:hover {
+  border-color: #667eea;
+  color: #4c51bf;
+}
+
 /* 数値セルは右揃え・等幅数字で桁を比較しやすく */
 .data-table th.cell-number,
 .data-table th.cell-currency,

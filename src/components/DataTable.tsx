@@ -1,4 +1,5 @@
 import React from 'react';
+import { exportCsv } from '../utils/exportCsv';
 
 export interface TableColumn {
   key: string;
@@ -18,6 +19,8 @@ export interface DataTableProps {
   formatNumber: (value: number) => string;
   loading?: boolean;
   className?: string;
+  /** 指定するとテーブル右上にCSVエクスポートボタンを表示する */
+  exportFilename?: string;
 }
 
 const DataTable: React.FC<DataTableProps> = ({ 
@@ -28,7 +31,8 @@ const DataTable: React.FC<DataTableProps> = ({
   formatBytes, 
   formatNumber, 
   loading = false,
-  className = ''
+  className = '',
+  exportFilename
 }) => {
   const formatCellValue = (value: any, column: TableColumn): string => {
     if (value === null || value === undefined) {
@@ -71,6 +75,16 @@ const DataTable: React.FC<DataTableProps> = ({
 
   return (
     <div className={`table-container ${className}`}>
+      {exportFilename && (
+        <div className="table-toolbar">
+          <button
+            className="csv-export-button"
+            onClick={() => exportCsv(columns, data, exportFilename)}
+          >
+            ⬇ CSVエクスポート
+          </button>
+        </div>
+      )}
       <table className="data-table">
         <thead>
           <tr>

@@ -265,6 +265,7 @@ const App: React.FC = () => {
                 <DataTable
                   data={[...(usageData.daily || [])].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())}
                   columns={dailyColumns}
+                  exportFilename="claude-usage-daily"
                   onRowClick={handleDailyRowClick}
                   formatDate={formatDate}
                   formatBytes={formatBytes}
@@ -278,6 +279,7 @@ const App: React.FC = () => {
                 <DataTable
                   data={usageData.monthly || []}
                   columns={monthlyColumns}
+                  exportFilename="claude-usage-monthly"
                   onRowClick={() => {}}
                   formatDate={formatDate}
                   formatBytes={formatBytes}
@@ -300,6 +302,7 @@ const App: React.FC = () => {
                 <DataTable
                   data={(usageData as any).modelUsage || []}
                   columns={modelColumns}
+                  exportFilename="claude-usage-models"
                   onRowClick={() => {}}
                   formatDate={formatDate}
                   formatBytes={formatBytes}
@@ -320,6 +323,7 @@ const App: React.FC = () => {
                 <DataTable
                   data={projectRows}
                   columns={projectColumns}
+                  exportFilename="claude-usage-projects"
                   onRowClick={() => {}}
                   formatDate={formatDate}
                   formatBytes={formatBytes}
