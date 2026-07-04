@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "nodemon server.js",
-    "dev:client": "react-scripts start",
+    "dev:client": "PORT=30000 react-scripts start",
     "build": "react-scripts build",
     "start": "node server.js",
     "test": "react-scripts test",
