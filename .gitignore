@@ -171,3 +171,6 @@ Thumbs.db
 
 # Rust
 **/target/
+
+# Claude Code local overrides
+.claude/settings.local.json
