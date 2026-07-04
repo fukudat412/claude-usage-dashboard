@@ -105,6 +105,8 @@
   font-size: 0.9rem;
   color: #666;
   border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s;
   white-space: nowrap;
 }
@@ -197,6 +199,61 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
+}
+
+/* 使用量推移のビュー切替（セグメントコントロール） */
+.view-mode-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.view-mode-controls h3 {
+  margin: 0;
+}
+
+.view-toggle {
+  display: inline-flex;
+  background: #eef0f4;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.view-toggle button {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.view-toggle button:hover {
+  color: #333;
+}
+
+.view-toggle button.active {
+  background: #fff;
+  color: #4c51bf;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* 数値セルは右揃え・等幅数字で桁を比較しやすく */
+.data-table th.cell-number,
+.data-table th.cell-currency,
+.data-table th.cell-bytes,
+.data-table td.cell-number,
+.data-table td.cell-currency,
+.data-table td.cell-bytes {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .view-controls {
@@ -574,9 +631,14 @@ tr:hover {
   }
   
   .summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
   }
-  
+
+  .summary-card {
+    padding: 1rem 0.75rem;
+  }
+
   .data-table, .usage-table {
     overflow-x: auto;
   }

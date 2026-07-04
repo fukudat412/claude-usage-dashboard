@@ -95,6 +95,8 @@ export interface SummaryCardProps {
   value: string | number;
   subtitle?: string;
   className?: string;
+  /** ホバー時に正確な値を表示する（コンパクト表記のカード用） */
+  tooltip?: string;
 }
 
 export interface UsageChartProps {

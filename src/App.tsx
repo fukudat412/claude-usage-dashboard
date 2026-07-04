@@ -26,6 +26,27 @@ const App: React.FC = () => {
   const [projectsSubTab, setProjectsSubTab] = useState<ProjectsSubTab>('projects');
   const [logsSubTab, setLogsSubTab] = useState<LogsSubTab>('mcp');
 
+  // プロジェクト名はフラット化されたフルパスなので、全行に共通するプレフィックスを
+  // 取り除いて表示する（フルパスはツールチップで確認できる）
+  const projectRows = React.useMemo(() => {
+    const projects: Record<string, any>[] = (usageData as any)?.projects || [];
+    if (projects.length < 2) {
+      return projects.map((proj) => ({ ...proj, fullName: proj.name }));
+    }
+    const names = projects.map((proj) => String(proj.name ?? ''));
+    let prefix = names[0];
+    for (const name of names) {
+      while (prefix && !name.startsWith(prefix)) prefix = prefix.slice(0, -1);
+    }
+    const cut = prefix.lastIndexOf('-') + 1;
+    return projects.map((proj) => ({
+      ...proj,
+      fullName: proj.name,
+      name: cut > 1 ? String(proj.name).slice(cut) || proj.name : proj.name,
+    }));
+  }, [usageData]);
+
+
   // キーボードショートカット: Rキーで更新
   React.useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -116,7 +137,7 @@ const App: React.FC = () => {
   ];
 
   const projectColumns: TableColumn[] = [
-    { key: 'name', title: 'プロジェクト名', type: 'text' },
+    { key: 'name', title: 'プロジェクト名', type: 'text', tooltipKey: 'fullName' },
     { key: 'totalTokens', title: '総トークン数', type: 'number' },
     { key: 'totalCost', title: '総コスト', type: 'currency' },
     { key: 'messageCount', title: 'メッセージ数', type: 'number' },
@@ -288,7 +309,7 @@ const App: React.FC = () => {
               <div className="sub-content">
                 <h2>プロジェクト別使用量（VS Code拡張統合）</h2>
                 <DataTable
-                  data={(usageData as any).projects || []}
+                  data={projectRows}
                   columns={projectColumns}
                   onRowClick={() => {}}
                   formatDate={formatDate}

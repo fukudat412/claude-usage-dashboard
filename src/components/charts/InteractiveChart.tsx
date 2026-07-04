@@ -17,6 +17,7 @@ import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { ChartDataPoint } from '../../types';
 import './InteractiveChart.css';
+import { formatCompactNumber } from '../../utils/formatters';
 
 interface ProcessedDataPoint extends ChartDataPoint {
   displayDate: string;
@@ -138,9 +139,10 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
               tick={{ fontSize: 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis 
+            <YAxis
               tick={{ fontSize: 12 }}
-              tickFormatter={formatNumber}
+              tickFormatter={formatCompactNumber}
+              width={56}
             />
             <Tooltip 
               content={customTooltip}
@@ -172,9 +174,10 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
               tick={{ fontSize: 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis 
+            <YAxis
               tick={{ fontSize: 12 }}
-              tickFormatter={formatNumber}
+              tickFormatter={formatCompactNumber}
+              width={56}
             />
             <Tooltip 
               content={customTooltip}
@@ -204,9 +207,10 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
               tick={{ fontSize: 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis 
+            <YAxis
               tick={{ fontSize: 12 }}
-              tickFormatter={formatNumber}
+              tickFormatter={formatCompactNumber}
+              width={56}
             />
             <Tooltip 
               content={customTooltip}

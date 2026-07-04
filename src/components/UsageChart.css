@@ -18,6 +18,18 @@
   align-items: center;
 }
 
+.chart-type-controls-compact {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-type-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
 .chart-type-select {
   padding: 4px 8px;
   border: 1px solid #d1d5db;

@@ -19,6 +19,14 @@ export const formatNumber = (num: number): string => {
   return new Intl.NumberFormat('ja-JP').format(num);
 };
 
+// 軸ラベル等の狭いスペース向けのコンパクト表記（例: 1.5B, 340M, 12K）
+export const formatCompactNumber = (num: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(num);
+};
+
 export const formatCurrency = (amount: number | string): string => {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   return `$${numAmount.toFixed(2)}`;

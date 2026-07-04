@@ -1,5 +1,6 @@
 import React from 'react';
 import SummaryCard from './SummaryCard';
+import { formatCompactNumber } from '../utils/formatters';
 import UsageChart from './UsageChart';
 import { UsageData } from '../types';
 
@@ -45,34 +46,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* サマリーセクション */}
       <div className="summary-grid">
         <SummaryCard
-          title="MCPセッション"
-          value={formatNumber(typedSummary.totalMcpSessions)}
-          subtitle="総セッション数"
-        />
-        <SummaryCard
-          title="Todoファイル"
-          value={formatNumber(typedSummary.totalTodoFiles)}
-          subtitle="管理ファイル数"
-        />
-        <SummaryCard
-          title="VS Codeタスク"
-          value={formatNumber(typedSummary.totalVsCodeTasks)}
-          subtitle="拡張機能タスク数"
-        />
-        <SummaryCard
-          title="総トークン数"
-          value={formatNumber(typedSummary.totalTokens)}
-          subtitle="全期間の使用量"
-        />
-        <SummaryCard
           title="総コスト"
           value={`$${typedSummary.totalCost}`}
           subtitle="全期間の料金"
         />
         <SummaryCard
-          title="データサイズ"
-          value={formatBytes(typedSummary.totalSize)}
-          subtitle="ログファイル容量"
+          title="総トークン数"
+          value={formatCompactNumber(typedSummary.totalTokens)}
+          subtitle="全期間の使用量"
+          tooltip={`${formatNumber(typedSummary.totalTokens)} tokens`}
         />
         <SummaryCard
           title="メッセージ数"
@@ -83,6 +65,26 @@ const Dashboard: React.FC<DashboardProps> = ({
           title="会話数"
           value={formatNumber(typedSummary.totalConversations)}
           subtitle="対話セッション数"
+        />
+        <SummaryCard
+          title="VS Codeタスク"
+          value={formatNumber(typedSummary.totalVsCodeTasks)}
+          subtitle="拡張機能タスク数"
+        />
+        <SummaryCard
+          title="MCPセッション"
+          value={formatNumber(typedSummary.totalMcpSessions)}
+          subtitle="総セッション数"
+        />
+        <SummaryCard
+          title="Todoファイル"
+          value={formatNumber(typedSummary.totalTodoFiles)}
+          subtitle="管理ファイル数"
+        />
+        <SummaryCard
+          title="データサイズ"
+          value={formatBytes(typedSummary.totalSize)}
+          subtitle="ログファイル容量"
         />
       </div>
 

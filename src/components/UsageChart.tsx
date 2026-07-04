@@ -93,6 +93,7 @@ const UsageChart: React.FC<UsageChartProps> = ({
           </div>
         )}
         <div className="chart-type-controls-compact">
+          <label htmlFor="chart-type" className="chart-type-label">チャート種類:</label>
           <select
             id="chart-type"
             value={chartType}

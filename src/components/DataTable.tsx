@@ -5,6 +5,8 @@ export interface TableColumn {
   title: string;
   type?: 'text' | 'date' | 'bytes' | 'number' | 'currency';
   className?: string;
+  /** ホバー時のツールチップに使う行キー（例: 短縮表示の元となるフルパス） */
+  tooltipKey?: string;
 }
 
 export interface DataTableProps {
@@ -64,13 +66,16 @@ const DataTable: React.FC<DataTableProps> = ({
     );
   }
 
+  const cellClass = (column: TableColumn): string =>
+    [`cell-${column.type || 'text'}`, column.className].filter(Boolean).join(' ');
+
   return (
     <div className={`table-container ${className}`}>
       <table className="data-table">
         <thead>
           <tr>
             {columns.map(column => (
-              <th key={column.key} className={column.className || ''}>
+              <th key={column.key} className={cellClass(column)}>
                 {column.title}
               </th>
             ))}
@@ -84,7 +89,11 @@ const DataTable: React.FC<DataTableProps> = ({
               className={onRowClick ? 'clickable' : ''}
             >
               {columns.map(column => (
-                <td key={column.key} className={column.className || ''}>
+                <td
+                  key={column.key}
+                  className={cellClass(column)}
+                  title={column.tooltipKey ? String(row[column.tooltipKey] ?? '') : undefined}
+                >
                   {formatCellValue(row[column.key], column)}
                 </td>
               ))}
