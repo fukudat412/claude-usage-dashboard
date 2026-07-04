@@ -61,7 +61,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
   enableDrillDown = true,
   showControls = true
 }) => {
-  const [hoveredData, setHoveredData] = useState<ProcessedDataPoint | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<string>('totalTokens');
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [selectedDataPoint, setSelectedDataPoint] = useState<SelectedDataPoint | null>(null);
@@ -93,15 +92,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
       onDataPointClick?.(data);
     }
   }, [enableDrillDown, onDataPointClick]);
-
-  const handleMouseEnter = useCallback((data: ProcessedDataPoint) => {
-    setHoveredData(data);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setHoveredData(null);
-  }, []);
-
 
   const customTooltip = ({ active, payload, label }: TooltipProps) => {
     if (!active || !payload || payload.length === 0) return null;
@@ -276,14 +266,6 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
           {renderChart()}
         </ResponsiveContainer>
       </div>
-
-      {hoveredData && (
-        <div className="hover-info">
-          <h4>{hoveredData.formattedDate}</h4>
-          <p>総トークン: {formatNumber(hoveredData.totalTokens)}</p>
-          <p>コスト: ${Number(hoveredData.cost || 0).toFixed(2)}</p>
-        </div>
-      )}
 
       {showDetailModal && selectedDataPoint && (
         <div className="detail-modal-overlay" onClick={() => setShowDetailModal(false)}>
