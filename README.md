@@ -2,26 +2,6 @@
 
 Claude Codeの使用量を可視化するWebサービスです。自分のPC上のClaude Codeデータを読み取り、使用状況を確認できます。
 
-## 🚀 NEW: Rust Backend Migration
-
-**2.8倍のパフォーマンス向上を達成！**
-
-主要なAPIエンドポイントをRust（Axum）で実装し、大幅な速度向上を実現しました。詳細は [RUST_MIGRATION.md](./RUST_MIGRATION.md) を参照してください。
-
-| 実装 | レスポンス時間 | 改善率 |
-|---|---|---|
-| Node.js | 108ms | 基準 |
-| **Rust** | **39ms** | **2.8倍高速** |
-
-**Rustバックエンドを有効にする:**
-```bash
-USE_RUST_BACKEND=true npm run dev
-```
-
-## 新機能：セッション管理
-
-メインセッションからMCP経由でサブセッションを作成・管理できるようになりました。
-
 ## 機能
 
 ### サマリー表示
@@ -51,7 +31,6 @@ USE_RUST_BACKEND=true npm run dev
 - **MCPツール使用状況**: 各MCPツールの詳細な使用統計と可視化
 
 ### 技術機能
-- **セッション管理**: メインセッション・サブセッションの作成と管理（WebSocket対応）
 - **インタラクティブチャート**: エクスポート・ドリルダウン・フィルタリング機能
 - **型安全性**: 完全TypeScript化による開発者体験とコード品質の向上
 - **キャッシュ機能**: データの高速読み込み
@@ -66,59 +45,7 @@ USE_RUST_BACKEND=true npm run dev
 
 ### Docker での実行（推奨）
 
-#### 🚀 Rust対応版（超軽量・高速）
-
-**アプローチA: 統合版（単一コンテナ）**
-
-Rust + Node.jsを1つのコンテナで実行:
-
-```bash
-# ビルドと起動
-docker build -f Dockerfile.rust -t claude-dashboard-rust .
-docker run -d --name claude-dashboard \
-  -p 3001:3001 \
-  -v ~/.claude:/home/appuser/.claude:ro \
-  -v ~/Library/Caches/claude-cli-nodejs:/home/appuser/Library/Caches/claude-cli-nodejs:ro \
-  -v ~/Library/Application\ Support/Code:/home/appuser/Library/Application\ Support/Code:ro \
-  claude-dashboard-rust
-
-# ログ確認
-docker logs -f claude-dashboard
-```
-
-**イメージサイズ**: 約120MB（Node.jsのみ版の180MBから33%削減）
-**メモリ使用量**: 約20-40MB（アイドル時80%削減）
-
-**アプローチB: マルチコンテナ版（最軽量・推奨）**
-
-RustバックエンドとNode.jsプロキシを分離（最も軽量）:
-
-```bash
-# ビルドと起動
-docker-compose -f docker-compose.rust.yml up -d
-
-# ログ確認
-docker-compose -f docker-compose.rust.yml logs -f
-
-# 停止
-docker-compose -f docker-compose.rust.yml down
-```
-
-**イメージサイズ**:
-- Rustバックエンド: 約15MB（distroless）
-- Node.jsプロキシ: 約100MB
-- 合計: 約115MB
-
-**メモリ使用量**:
-- Rustバックエンド: 約5-15MB
-- Node.jsプロキシ: 約10-20MB
-- 合計: 約15-35MB
-
-**詳細**: パフォーマンス比較や技術詳細は [DOCKER_RUST.md](./DOCKER_RUST.md) を参照してください。
-
-#### 🔧 Rust対応版開発環境（ホットリロード対応）
-
-Rust + Node.jsの開発環境（cargo-watch対応）:
+#### 🔧 開発環境（ホットリロード対応）
 
 ```bash
 # 開発環境を起動（ホットリロード対応）
@@ -127,29 +54,20 @@ docker-compose -f docker-compose.dev.yml up
 # バックグラウンドで実行
 docker-compose -f docker-compose.dev.yml up -d
 
-# ログ確認（全体）
+# ログ確認
 docker-compose -f docker-compose.dev.yml logs -f
-
-# 特定サービスのログ
-docker-compose -f docker-compose.dev.yml logs -f rust-backend
-docker-compose -f docker-compose.dev.yml logs -f node-dev
 
 # 停止
 docker-compose -f docker-compose.dev.yml down
 ```
 
 **特徴**:
-- **Rustホットリロード**: cargo-watchによる自動再コンパイル
 - **Reactホットリロード**: ソースコード変更時に自動リロード
 - **開発ログ**: DEBUG レベルのログ出力
-- **永続キャッシュ**: Cargoキャッシュをボリュームで保持（ビルド高速化）
 
 開発環境では以下のポートが利用可能です：
 - http://localhost:30000 - React開発サーバー（ホットリロード対応）
 - http://localhost:30001 - Expressサーバー（nodemon対応）
-- http://localhost:8080 - Rustバックエンド（cargo-watch対応）
-
-#### 従来版（Node.jsのみ）
 
 #### 本番環境
 ```bash

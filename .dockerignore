@@ -43,9 +43,8 @@ coverage
 !README.md
 docs
 
-# Rust (for multi-stage builds, we exclude Rust files in root)
-rust-backend/target
-rust-backend/.cargo
+# Rust build artifacts
+rust-processor/target
 
 # Cache
 .cache
