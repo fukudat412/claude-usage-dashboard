@@ -17,7 +17,6 @@ services:
       - NODE_ENV=development
       - LOG_LEVEL=debug
       - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
-      - WATCHPACK_POLLING=true
     volumes:
       # Source code for hot reload
       - .:/app

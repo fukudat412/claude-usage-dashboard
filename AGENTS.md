@@ -16,7 +16,7 @@ Typical triggers: adding/removing/renaming files or API endpoints, changing port
 
 ### Architecture
 - **Backend**: Node.js + Express (Modular architecture with services, routes, middleware)
-- **Frontend**: React (Component-based with custom hooks)
+- **Frontend**: React + Vite (Component-based with custom hooks)
 - **Container**: Docker (Multi-stage build with Alpine Linux)
 - **Data Sources**: Local Claude Code files (MCP logs, todos, VS Code extension data)
 
@@ -24,6 +24,8 @@ Typical triggers: adding/removing/renaming files or API endpoints, changing port
 ```
 claude-usage-dashboard/
 ├── package.json           # Unified package.json (Flat structure)
+├── vite.config.ts         # Vite + Vitest configuration
+├── index.html             # Vite entry HTML
 ├── server.js             # Express server entry point
 ├── src/
 │   ├── components/        # React components (TypeScript)
@@ -71,7 +73,7 @@ claude-usage-dashboard/
 ## Development Setup
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20.19+
 - Docker (optional but recommended)
 - npm
 
@@ -144,6 +146,7 @@ The application reads data from these Claude Code locations:
 
 ## API Endpoints
 
+- `GET /api/health` - Health check (used by Docker HEALTHCHECK)
 - `GET /api/v2/summary` - Usage summary
 - `GET /api/v2/daily`, `/api/v2/monthly`, `/api/v2/hourly` - Aggregations by period
 - `GET /api/v2/projects`, `/api/v2/models` - Aggregations by project / model
@@ -153,10 +156,10 @@ The application reads data from these Claude Code locations:
 ## Build & Deployment
 
 ### Docker Specifications
-- **Base Image**: Node.js 18 Alpine Linux
+- **Base Image**: Node.js 22 Alpine Linux
 - **Security**: Non-root user (nodejs:1001)
 - **Port**: 30001 (React dev server: 30000)
-- **Health Check**: `/api/health` endpoint (note: not implemented in the API — the container healthcheck currently always fails)
+- **Health Check**: `/api/health` endpoint
 - **Signal Handling**: dumb-init for proper process management
 
 ### Volume Mounts
@@ -197,11 +200,11 @@ The application reads data from these Claude Code locations:
 
 ### Testing Commands
 ```bash
-# Run tests
+# Run tests (Vitest)
 npm test
 
-# Test coverage
-npm run test:coverage
+# Type check
+npm run typecheck
 ```
 
 ## Common Development Tasks
@@ -209,7 +212,7 @@ npm run test:coverage
 ### Adding New Data Source
 1. Create service file in `src/services/`
 2. Implement data processing logic
-3. Add route in `src/routes/usage.js`
+3. Add route in `src/routes/api/`
 4. Update frontend components as needed
 
 ### Modifying UI Components

@@ -38,7 +38,7 @@ Claude Codeの使用量を可視化するWebサービスです。自分のPC上�
 ## セットアップ
 
 ### 必要な環境
-- Node.js (v14以上) または Docker
+- Node.js (v20.19以上) または Docker
 - npm (ローカル実行の場合)
 
 ## 実行方法
@@ -205,7 +205,7 @@ npm start
 ## 技術仕様
 
 - **バックエンド**: Node.js + Express (JavaScript)
-- **フロントエンド**: React + TypeScript
+- **フロントエンド**: React + TypeScript（ビルド: Vite、テスト: Vitest）
 - **データ形式**: JSON
 - **型安全性**: フロントエンドの完全TypeScript化（strict mode対応）
 - **スタイル**: CSS（レスポンシブデザイン）
@@ -219,6 +219,8 @@ npm start
 claude-usage-dashboard/
 ├── package.json           # 統合されたpackage.json
 ├── tsconfig.json         # TypeScript設定
+├── vite.config.ts        # Vite + Vitest設定
+├── index.html            # Viteエントリーポイント
 ├── server.js             # Express サーバー（エントリーポイント）
 ├── src/
 │   ├── components/        # React コンポーネント（TypeScript）
@@ -307,7 +309,7 @@ claude-usage-dashboard/
 ## Docker 仕様
 
 ### 本番用イメージ
-- **ベースイメージ**: Node.js 18 Alpine Linux
+- **ベースイメージ**: Node.js 22 Alpine Linux
 - **セキュリティ**: 非rootユーザー (nodejs:1001) で実行
 - **ポート**: 30001
 - **ヘルスチェック**: `/api/health` エンドポイント

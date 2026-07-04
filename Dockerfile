@@ -1,7 +1,7 @@
 # Multi-stage Docker build for Claude Usage Dashboard
 
 # Stage 1: Builder
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
@@ -25,7 +25,7 @@ RUN npm ci --legacy-peer-deps
 RUN npm run build
 
 # Stage 2: Production
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 # Install dumb-init and security updates
 RUN apk add --no-cache dumb-init && \

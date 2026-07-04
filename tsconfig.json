@@ -1,11 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES2020",
+    "useDefineForClassFields": true,
     "lib": [
-      "dom",
-      "dom.iterable",
-      "es6"
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
     ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -13,15 +16,10 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "declaration": false,
-    "outDir": "build",
-    "rootDir": ".",
     "baseUrl": "src",
     "paths": {
       "~/*": ["*"],
@@ -34,21 +32,17 @@
     },
     "types": [
       "node",
-      "jest",
-      "@testing-library/jest-dom"
+      "vite/client"
     ]
   },
   "include": [
     "src/**/*",
-    "server.js"
+    "server.js",
+    "vite.config.ts"
   ],
   "exclude": [
     "node_modules",
     "build",
-    "dist",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "dist"
   ]
 }
