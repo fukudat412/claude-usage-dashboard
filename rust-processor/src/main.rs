@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use chrono::{DateTime, Utc};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -21,11 +20,14 @@ struct Message {
     timestamp: Option<String>,
     #[serde(rename = "sessionId")]
     session_id: Option<String>,
+    #[serde(rename = "requestId")]
+    request_id: Option<String>,
     message: Option<MessageContent>,
 }
 
 #[derive(Debug, Deserialize)]
 struct MessageContent {
+    id: Option<String>,
     model: Option<String>,
     usage: Option<Usage>,
 }
@@ -213,21 +215,43 @@ struct ModelData {
     cache_read_tokens: u64,
 }
 
-fn calculate_usage_metrics(usage: &Usage, _model: Option<&str>) -> UsageMetrics {
-    let input_tokens = usage.input_tokens.unwrap_or(0);
+/// モデル別の ($/token 入力, $/token 出力)。Node側 pricingService.js と一致させること。
+fn pricing_for_model(model: Option<&str>) -> (f64, f64) {
+    let m = model.unwrap_or("").to_lowercase();
+    if m.contains("fable") || m.contains("mythos") {
+        (10.0e-6, 50.0e-6)
+    } else if m.contains("claude-3-opus") || m.contains("opus-4-2025") || m.contains("opus-4-1") {
+        (15.0e-6, 75.0e-6)
+    } else if m.contains("opus") {
+        (5.0e-6, 25.0e-6)
+    } else if m.contains("3-haiku") {
+        (0.25e-6, 1.25e-6)
+    } else if m.contains("haiku") {
+        (1.0e-6, 5.0e-6)
+    } else {
+        // sonnet系・不明モデルはSonnet価格
+        (3.0e-6, 15.0e-6)
+    }
+}
+
+fn calculate_usage_metrics(usage: &Usage, model: Option<&str>) -> UsageMetrics {
+    let new_input = usage.input_tokens.unwrap_or(0);
     let output_tokens = usage.output_tokens.unwrap_or(0);
     let cache_creation_tokens = usage.cache_creation_tokens.unwrap_or(0);
     let cache_read_tokens = usage.cache_read_tokens.unwrap_or(0);
 
-    let new_input_tokens = input_tokens.saturating_sub(cache_creation_tokens);
-    let cached_tokens = cache_creation_tokens + cache_read_tokens;
-    let total_tokens = input_tokens + output_tokens + cached_tokens;
+    // Node実装と同じ定義:
+    //   inputTokens  = 新規入力 + キャッシュ作成（フル価格帯）
+    //   cachedTokens = キャッシュ読み取り（0.1倍価格）
+    let input_tokens = new_input + cache_creation_tokens;
+    let cached_tokens = cache_read_tokens;
+    let total_tokens = input_tokens + cached_tokens + output_tokens;
 
-    // 簡易的なコスト計算（モデル別の価格は省略）
-    let cost = (input_tokens as f64 * 0.003 / 1000.0)
-        + (output_tokens as f64 * 0.015 / 1000.0)
-        + (cache_creation_tokens as f64 * 0.00375 / 1000.0)
-        + (cache_read_tokens as f64 * 0.0003 / 1000.0);
+    let (in_price, out_price) = pricing_for_model(model);
+    let cost = (new_input as f64) * in_price
+        + (cache_read_tokens as f64) * in_price * 0.1
+        + (cache_creation_tokens as f64) * in_price * 1.25
+        + (output_tokens as f64) * out_price;
 
     UsageMetrics {
         input_tokens,
@@ -235,10 +259,26 @@ fn calculate_usage_metrics(usage: &Usage, _model: Option<&str>) -> UsageMetrics 
         cached_tokens,
         total_tokens,
         cost,
-        new_input_tokens,
+        new_input_tokens: new_input,
         cache_creation_tokens,
         cache_read_tokens,
     }
+}
+
+struct DedupEntry {
+    project_name: String,
+    session_id: Option<String>,
+    timestamp: Option<String>,
+    model: Option<String>,
+    usage: Usage,
+    usage_total: u64,
+}
+
+fn usage_total_of(usage: &Usage) -> u64 {
+    usage.input_tokens.unwrap_or(0)
+        + usage.output_tokens.unwrap_or(0)
+        + usage.cache_creation_tokens.unwrap_or(0)
+        + usage.cache_read_tokens.unwrap_or(0)
 }
 
 fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
@@ -249,11 +289,13 @@ fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
         .filter(|path| path.is_dir())
         .collect();
 
-    let mut usage_by_date: HashMap<String, DayData> = HashMap::new();
-    let mut usage_by_month: HashMap<String, MonthData> = HashMap::new();
-    let mut usage_by_model: HashMap<String, ModelData> = HashMap::new();
-    let mut projects = Vec::new();
-    let mut detailed_usage = Vec::new();
+    // ---- Phase A: 収集 + 重複排除 ----
+    // ストリーミング中に同じAPI応答(message.id + requestId)がusage漸増で複数回書かれ、
+    // fork/resume/compactでも同一ターンが複製されるため、キーごとに
+    // トークン合計が最大のエントリ(=最終値)だけを採用する。
+    let mut dedup: HashMap<String, DedupEntry> = HashMap::new();
+    let mut project_meta: Vec<(String, String, usize, Option<String>)> = Vec::new(); // (name, path, message_count, last_activity)
+    let mut fallback_key = 0u64;
 
     for project_dir in &project_dirs {
         let project_name = project_dir
@@ -274,8 +316,6 @@ fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
             })
             .collect();
 
-        let mut total_tokens = 0u64;
-        let mut total_cost = 0.0f64;
         let mut message_count = 0usize;
         let mut last_activity: Option<String> = None;
 
@@ -297,146 +337,197 @@ fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
                 message_count += 1;
 
                 if let Some(timestamp) = &msg.timestamp {
-                    if last_activity.is_none()
-                        || timestamp > last_activity.as_ref().unwrap()
-                    {
+                    if last_activity.is_none() || timestamp > last_activity.as_ref().unwrap() {
                         last_activity = Some(timestamp.clone());
                     }
                 }
 
-                if let (Some(message_content), Some(timestamp)) =
-                    (msg.message, msg.timestamp.as_ref())
-                {
+                if let Some(message_content) = msg.message {
                     if let Some(usage) = message_content.usage {
-                        let model = message_content.model.clone().unwrap_or_else(|| "unknown".to_string());
-                        let metrics = calculate_usage_metrics(&usage, Some(&model));
-
-                        // Detailed usage
-                        if let Some(session_id) = &msg.session_id {
-                            detailed_usage.push(DetailedUsage {
-                                timestamp: timestamp.clone(),
-                                session_id: session_id.clone(),
-                                model: model.clone(),
-                                input_tokens: metrics.input_tokens,
-                                output_tokens: metrics.output_tokens,
-                                cached_tokens: metrics.cached_tokens,
-                                total_tokens: metrics.total_tokens,
-                                cost: metrics.cost,
-                                new_input_tokens: metrics.new_input_tokens,
-                                cache_creation_tokens: metrics.cache_creation_tokens,
-                                cache_read_tokens: metrics.cache_read_tokens,
-                            });
-                        }
-
-                        // Daily data
-                        let date = timestamp.split('T').next().unwrap_or("").to_string();
-                        let day_data = usage_by_date.entry(date.clone()).or_insert(DayData {
-                            date: date.clone(),
-                            input_tokens: 0,
-                            output_tokens: 0,
-                            cached_tokens: 0,
-                            total_tokens: 0,
-                            cost: 0.0,
-                            sessions: HashSet::new(),
-                            new_input_tokens: 0,
-                            cache_creation_tokens: 0,
-                            cache_read_tokens: 0,
-                        });
-
-                        day_data.input_tokens += metrics.input_tokens;
-                        day_data.output_tokens += metrics.output_tokens;
-                        day_data.cached_tokens += metrics.cached_tokens;
-                        day_data.total_tokens += metrics.total_tokens;
-                        day_data.cost += metrics.cost;
-                        day_data.new_input_tokens += metrics.new_input_tokens;
-                        day_data.cache_creation_tokens += metrics.cache_creation_tokens;
-                        day_data.cache_read_tokens += metrics.cache_read_tokens;
-
-                        if let Some(session_id) = &msg.session_id {
-                            day_data.sessions.insert(session_id.clone());
-                        }
-
-                        // Monthly data
-                        let month = if date.len() >= 7 {
-                            format!("{}-{}", &date[..4], &date[5..7])
-                        } else {
-                            "unknown".to_string()
+                        let key = match (&message_content.id, &msg.request_id) {
+                            (None, None) => {
+                                fallback_key += 1;
+                                format!("__nokey__:{}", fallback_key)
+                            }
+                            (mid, rid) => format!(
+                                "{}:{}",
+                                mid.as_deref().unwrap_or(""),
+                                rid.as_deref().unwrap_or("")
+                            ),
                         };
 
-                        let month_data = usage_by_month.entry(month.clone()).or_insert(MonthData {
-                            month: month.clone(),
-                            input_tokens: 0,
-                            output_tokens: 0,
-                            cached_tokens: 0,
-                            total_tokens: 0,
-                            cost: 0.0,
-                            sessions: HashSet::new(),
-                            messages: 0,
-                            new_input_tokens: 0,
-                            cache_creation_tokens: 0,
-                            cache_read_tokens: 0,
-                        });
+                        let candidate = DedupEntry {
+                            project_name: project_name.clone(),
+                            session_id: msg.session_id.clone(),
+                            timestamp: msg.timestamp.clone(),
+                            model: message_content.model.clone(),
+                            usage_total: usage_total_of(&usage),
+                            usage,
+                        };
 
-                        month_data.input_tokens += metrics.input_tokens;
-                        month_data.output_tokens += metrics.output_tokens;
-                        month_data.cached_tokens += metrics.cached_tokens;
-                        month_data.total_tokens += metrics.total_tokens;
-                        month_data.cost += metrics.cost;
-                        month_data.messages += 1;
-                        month_data.new_input_tokens += metrics.new_input_tokens;
-                        month_data.cache_creation_tokens += metrics.cache_creation_tokens;
-                        month_data.cache_read_tokens += metrics.cache_read_tokens;
-
-                        if let Some(session_id) = &msg.session_id {
-                            month_data.sessions.insert(session_id.clone());
+                        match dedup.get(&key) {
+                            Some(existing) if existing.usage_total > candidate.usage_total => {}
+                            _ => {
+                                dedup.insert(key, candidate);
+                            }
                         }
-
-                        // Model data
-                        let model_data = usage_by_model.entry(model.clone()).or_insert(ModelData {
-                            model: model.clone(),
-                            input_tokens: 0,
-                            output_tokens: 0,
-                            cached_tokens: 0,
-                            total_tokens: 0,
-                            cost: 0.0,
-                            sessions: HashSet::new(),
-                            messages: 0,
-                            new_input_tokens: 0,
-                            cache_creation_tokens: 0,
-                            cache_read_tokens: 0,
-                        });
-
-                        model_data.input_tokens += metrics.input_tokens;
-                        model_data.output_tokens += metrics.output_tokens;
-                        model_data.cached_tokens += metrics.cached_tokens;
-                        model_data.total_tokens += metrics.total_tokens;
-                        model_data.cost += metrics.cost;
-                        model_data.messages += 1;
-                        model_data.new_input_tokens += metrics.new_input_tokens;
-                        model_data.cache_creation_tokens += metrics.cache_creation_tokens;
-                        model_data.cache_read_tokens += metrics.cache_read_tokens;
-
-                        if let Some(session_id) = &msg.session_id {
-                            model_data.sessions.insert(session_id.clone());
-                        }
-
-                        // Project totals
-                        total_tokens += metrics.total_tokens;
-                        total_cost += metrics.cost;
                     }
                 }
             }
         }
 
-        projects.push(Project {
-            name: project_name,
-            path: project_dir.to_string_lossy().to_string(),
-            total_tokens,
-            total_cost: format!("{:.4}", total_cost),
+        project_meta.push((
+            project_name,
+            project_dir.to_string_lossy().to_string(),
             message_count,
             last_activity,
-        });
+        ));
     }
+
+    // ---- Phase B: dedup済みエントリを集計 ----
+    let mut usage_by_date: HashMap<String, DayData> = HashMap::new();
+    let mut usage_by_month: HashMap<String, MonthData> = HashMap::new();
+    let mut usage_by_model: HashMap<String, ModelData> = HashMap::new();
+    let mut detailed_usage = Vec::new();
+    let mut project_totals: HashMap<String, (u64, f64)> = HashMap::new();
+
+    for entry in dedup.values() {
+        let model = entry.model.clone().unwrap_or_else(|| "unknown".to_string());
+        let metrics = calculate_usage_metrics(&entry.usage, Some(&model));
+
+        if let Some(timestamp) = &entry.timestamp {
+            if let Some(session_id) = &entry.session_id {
+                detailed_usage.push(DetailedUsage {
+                    timestamp: timestamp.clone(),
+                    session_id: session_id.clone(),
+                    model: model.clone(),
+                    input_tokens: metrics.input_tokens,
+                    output_tokens: metrics.output_tokens,
+                    cached_tokens: metrics.cached_tokens,
+                    total_tokens: metrics.total_tokens,
+                    cost: metrics.cost,
+                    new_input_tokens: metrics.new_input_tokens,
+                    cache_creation_tokens: metrics.cache_creation_tokens,
+                    cache_read_tokens: metrics.cache_read_tokens,
+                });
+            }
+
+            // Daily data
+            let date = timestamp.split('T').next().unwrap_or("").to_string();
+            let day_data = usage_by_date.entry(date.clone()).or_insert(DayData {
+                date: date.clone(),
+                input_tokens: 0,
+                output_tokens: 0,
+                cached_tokens: 0,
+                total_tokens: 0,
+                cost: 0.0,
+                sessions: HashSet::new(),
+                new_input_tokens: 0,
+                cache_creation_tokens: 0,
+                cache_read_tokens: 0,
+            });
+
+            day_data.input_tokens += metrics.input_tokens;
+            day_data.output_tokens += metrics.output_tokens;
+            day_data.cached_tokens += metrics.cached_tokens;
+            day_data.total_tokens += metrics.total_tokens;
+            day_data.cost += metrics.cost;
+            day_data.new_input_tokens += metrics.new_input_tokens;
+            day_data.cache_creation_tokens += metrics.cache_creation_tokens;
+            day_data.cache_read_tokens += metrics.cache_read_tokens;
+
+            if let Some(session_id) = &entry.session_id {
+                day_data.sessions.insert(session_id.clone());
+            }
+
+            // Monthly data
+            let month = if date.len() >= 7 {
+                format!("{}-{}", &date[..4], &date[5..7])
+            } else {
+                "unknown".to_string()
+            };
+
+            let month_data = usage_by_month.entry(month.clone()).or_insert(MonthData {
+                month: month.clone(),
+                input_tokens: 0,
+                output_tokens: 0,
+                cached_tokens: 0,
+                total_tokens: 0,
+                cost: 0.0,
+                sessions: HashSet::new(),
+                messages: 0,
+                new_input_tokens: 0,
+                cache_creation_tokens: 0,
+                cache_read_tokens: 0,
+            });
+
+            month_data.input_tokens += metrics.input_tokens;
+            month_data.output_tokens += metrics.output_tokens;
+            month_data.cached_tokens += metrics.cached_tokens;
+            month_data.total_tokens += metrics.total_tokens;
+            month_data.cost += metrics.cost;
+            month_data.messages += 1;
+            month_data.new_input_tokens += metrics.new_input_tokens;
+            month_data.cache_creation_tokens += metrics.cache_creation_tokens;
+            month_data.cache_read_tokens += metrics.cache_read_tokens;
+
+            if let Some(session_id) = &entry.session_id {
+                month_data.sessions.insert(session_id.clone());
+            }
+
+            // Model data
+            let model_data = usage_by_model.entry(model.clone()).or_insert(ModelData {
+                model: model.clone(),
+                input_tokens: 0,
+                output_tokens: 0,
+                cached_tokens: 0,
+                total_tokens: 0,
+                cost: 0.0,
+                sessions: HashSet::new(),
+                messages: 0,
+                new_input_tokens: 0,
+                cache_creation_tokens: 0,
+                cache_read_tokens: 0,
+            });
+
+            model_data.input_tokens += metrics.input_tokens;
+            model_data.output_tokens += metrics.output_tokens;
+            model_data.cached_tokens += metrics.cached_tokens;
+            model_data.total_tokens += metrics.total_tokens;
+            model_data.cost += metrics.cost;
+            model_data.messages += 1;
+            model_data.new_input_tokens += metrics.new_input_tokens;
+            model_data.cache_creation_tokens += metrics.cache_creation_tokens;
+            model_data.cache_read_tokens += metrics.cache_read_tokens;
+
+            if let Some(session_id) = &entry.session_id {
+                model_data.sessions.insert(session_id.clone());
+            }
+        }
+
+        // Project totals
+        let totals = project_totals
+            .entry(entry.project_name.clone())
+            .or_insert((0, 0.0));
+        totals.0 += metrics.total_tokens;
+        totals.1 += metrics.cost;
+    }
+
+    let mut projects: Vec<Project> = project_meta
+        .into_iter()
+        .map(|(name, path, message_count, last_activity)| {
+            let (total_tokens, total_cost) =
+                project_totals.get(&name).copied().unwrap_or((0, 0.0));
+            Project {
+                name,
+                path,
+                total_tokens,
+                total_cost: format!("{:.4}", total_cost),
+                message_count,
+                last_activity,
+            }
+        })
+        .collect();
 
     // Convert to output format
     let mut daily_usage: Vec<DailyUsage> = usage_by_date

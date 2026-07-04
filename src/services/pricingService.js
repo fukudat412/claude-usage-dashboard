@@ -1,5 +1,33 @@
 const PRICING = {
-  // Claude Opus models
+  // Claude 5 / Fable
+  'claude-fable-5': {
+    input: 10.00 / 1_000_000,
+    output: 50.00 / 1_000_000
+  },
+  'claude-sonnet-5': {
+    input: 3.00 / 1_000_000,
+    output: 15.00 / 1_000_000
+  },
+
+  // Claude Opus 4.5+ (値下げ後の価格)
+  'claude-opus-4-8': {
+    input: 5.00 / 1_000_000,
+    output: 25.00 / 1_000_000
+  },
+  'claude-opus-4-7': {
+    input: 5.00 / 1_000_000,
+    output: 25.00 / 1_000_000
+  },
+  'claude-opus-4-6': {
+    input: 5.00 / 1_000_000,
+    output: 25.00 / 1_000_000
+  },
+  'claude-opus-4-5': {
+    input: 5.00 / 1_000_000,
+    output: 25.00 / 1_000_000
+  },
+
+  // Claude Opus models (旧価格帯)
   'claude-3-opus-20240229': {
     input: 15.00 / 1_000_000,
     output: 75.00 / 1_000_000
@@ -32,9 +60,13 @@ const PRICING = {
   },
 
   // Claude Haiku models
-  'claude-haiku-4-5-20251001': {  // New model
-    input: 0.25 / 1_000_000,
-    output: 1.25 / 1_000_000
+  'claude-haiku-4-5-20251001': {
+    input: 1.00 / 1_000_000,
+    output: 5.00 / 1_000_000
+  },
+  'claude-haiku-4-5': {
+    input: 1.00 / 1_000_000,
+    output: 5.00 / 1_000_000
   },
   'claude-3-5-haiku-20241022': {
     input: 1.00 / 1_000_000,
@@ -80,8 +112,16 @@ function getPricingForModel(model) {
   }
 
   // Pattern matching for model families
-  if (normalizedModel.includes('opus')) {
-    return PRICING['claude-3-opus-20240229'];
+  if (normalizedModel.includes('fable') || normalizedModel.includes('mythos')) {
+    return PRICING['claude-fable-5'];
+  } else if (normalizedModel.includes('opus')) {
+    // 旧世代(claude-3-opus / opus-4.0/4.1)は旧価格、それ以外(4.5+)は現行価格
+    if (normalizedModel.includes('claude-3-opus') ||
+        normalizedModel.includes('opus-4-2025') ||
+        normalizedModel.includes('opus-4-1')) {
+      return PRICING['claude-3-opus-20240229'];
+    }
+    return PRICING['claude-opus-4-8'];
   } else if (normalizedModel.includes('haiku')) {
     // Prioritize newer Haiku version
     if (normalizedModel.includes('4-5') || normalizedModel.includes('20251001')) {
@@ -110,8 +150,8 @@ function calculateCost(model, inputTokens = 0, outputTokens = 0, cacheReadTokens
   // Cache read tokens cost (10% of input price)
   const cacheReadCost = cacheReadTokens * pricing.input * 0.1;
 
-  // Cache creation tokens cost (full price for creation)
-  const cacheCreationCost = cacheCreationTokens * pricing.input;
+  // Cache creation tokens cost (5分TTLの書き込みは入力単価の1.25倍)
+  const cacheCreationCost = cacheCreationTokens * pricing.input * 1.25;
 
   // Output tokens cost
   const outputCost = outputTokens * pricing.output;

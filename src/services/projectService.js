@@ -17,199 +17,213 @@ async function processProjectDataNodeJS() {
 
     const projectDirs = await fs.readdir(CLAUDE_PATHS.projects);
     console.log(`Found ${projectDirs.length} project directories`);
-    
-    const usageByDate = new Map();
-    const usageByMonth = new Map();
-    const usageByModel = new Map();
-    const projects = [];
-    const detailedUsage = []; // Store detailed entries with timestamps
-    
-    // 並列でプロジェクトディレクトリを処理
+
+    // ---- Phase A: 収集 + 重複排除 ----
+    // Claude Codeはストリーミング中に同じAPI応答（message.id + requestId）を
+    // usageが漸増する形で複数回書き込む。さらにfork/resume/compactで同一ターンが
+    // 複数ファイルへ複製される。素朴に合算すると数倍に過大計上されるため、
+    // キーごとにトークン合計が最大のエントリ（=最終値）だけを採用する。
+    const dedupMap = new Map(); // key -> { projectDir, sessionId, timestamp, model, usage, usageTotal }
+    const projectMeta = new Map(); // projectDir -> { messageCount, lastActivity, path }
+    let fallbackKey = 0;
+
+    const usageTotalOf = (usage) =>
+      (usage.input_tokens || 0) +
+      (usage.output_tokens || 0) +
+      (usage.cache_creation_input_tokens || 0) +
+      (usage.cache_read_input_tokens || 0);
+
     await Promise.all(projectDirs.map(async (projectDir) => {
       const projectPath = path.join(CLAUDE_PATHS.projects, projectDir);
       const stats = await fs.stat(projectPath);
-      
       if (!stats.isDirectory()) return;
-      
+
       const files = await fs.readdir(projectPath);
-      let totalTokens = 0;
-      let totalCost = 0;
-      let messageCount = 0;
-      let lastActivity = null;
-      
-      // 並列でJSONLファイルを処理
+      const meta = { messageCount: 0, lastActivity: null, path: projectPath };
+      projectMeta.set(projectDir, meta);
+
       await Promise.all(files.map(async (file) => {
         if (!file.endsWith('.jsonl')) return;
-        
+
         const filePath = path.join(projectPath, file);
         const content = await fs.readFile(filePath, 'utf8');
         const lines = content.split('\n').filter(line => line.trim());
-        
+
         for (const line of lines) {
           try {
             const data = JSON.parse(line);
-            messageCount++;
-            
+            meta.messageCount++;
+
             if (data.timestamp) {
               const timestamp = new Date(data.timestamp);
-              if (!lastActivity || timestamp > lastActivity) {
-                lastActivity = timestamp;
+              if (!meta.lastActivity || timestamp > meta.lastActivity) {
+                meta.lastActivity = timestamp;
               }
             }
-            
+
             if (data.message && data.message.usage) {
               const usage = data.message.usage;
-              const timestamp = data.timestamp;
-              const model = data.message.model;
+              const messageId = data.message.id;
+              const requestId = data.requestId;
+              const key = (messageId || requestId)
+                ? `${messageId || ''}:${requestId || ''}`
+                : `__nokey__:${fallbackKey++}`;
 
-              const metrics = calculateUsageMetrics(usage, model);
+              const candidate = {
+                projectDir,
+                sessionId: data.sessionId,
+                timestamp: data.timestamp,
+                model: data.message.model,
+                usage,
+                usageTotal: usageTotalOf(usage)
+              };
 
-              // Store detailed entry with timestamp for time-based filtering
-              if (timestamp) {
-                detailedUsage.push({
-                  timestamp,
-                  sessionId: data.sessionId,
-                  model,
-                  inputTokens: metrics.inputTokens,
-                  outputTokens: metrics.outputTokens,
-                  cachedTokens: metrics.cachedTokens,
-                  totalTokens: metrics.totalTokens,
-                  cost: metrics.cost,
-                  newInputTokens: metrics.newInputTokens || 0,
-                  cacheCreationTokens: metrics.cacheCreationTokens || 0,
-                  cacheReadTokens: metrics.cacheReadTokens || 0
-                });
+              const existing = dedupMap.get(key);
+              if (!existing || candidate.usageTotal >= existing.usageTotal) {
+                dedupMap.set(key, candidate);
               }
-
-              // 日毎データ
-              if (timestamp) {
-                const date = new Date(timestamp).toISOString().split('T')[0];
-                if (!usageByDate.has(date)) {
-                  usageByDate.set(date, {
-                    date,
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    cachedTokens: 0,
-                    totalTokens: 0,
-                    cost: 0,
-                    sessions: new Set(),
-                    // Detailed breakdown
-                    newInputTokens: 0,
-                    cacheCreationTokens: 0,
-                    cacheReadTokens: 0
-                  });
-                }
-                
-                const dayData = usageByDate.get(date);
-                dayData.inputTokens += metrics.inputTokens;
-                dayData.outputTokens += metrics.outputTokens;
-                dayData.cachedTokens += metrics.cachedTokens;
-                dayData.totalTokens += metrics.totalTokens;
-                dayData.cost += metrics.cost;
-                
-                // Add detailed breakdown
-                dayData.newInputTokens += metrics.newInputTokens || 0;
-                dayData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
-                dayData.cacheReadTokens += metrics.cacheReadTokens || 0;
-                
-                if (data.sessionId) {
-                  dayData.sessions.add(data.sessionId);
-                }
-                
-                // 月毎データ
-                const monthKey = `${new Date(timestamp).getFullYear()}-${String(new Date(timestamp).getMonth() + 1).padStart(2, '0')}`;
-                if (!usageByMonth.has(monthKey)) {
-                  usageByMonth.set(monthKey, {
-                    month: monthKey,
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    cachedTokens: 0,
-                    totalTokens: 0,
-                    cost: 0,
-                    sessions: new Set(),
-                    messages: 0,
-                    // Detailed breakdown
-                    newInputTokens: 0,
-                    cacheCreationTokens: 0,
-                    cacheReadTokens: 0
-                  });
-                }
-                
-                const monthData = usageByMonth.get(monthKey);
-                monthData.inputTokens += metrics.inputTokens;
-                monthData.outputTokens += metrics.outputTokens;
-                monthData.cachedTokens += metrics.cachedTokens;
-                monthData.totalTokens += metrics.totalTokens;
-                monthData.messages++;
-                monthData.cost += metrics.cost;
-                
-                // Add detailed breakdown
-                monthData.newInputTokens += metrics.newInputTokens || 0;
-                monthData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
-                monthData.cacheReadTokens += metrics.cacheReadTokens || 0;
-                
-                if (data.sessionId) {
-                  monthData.sessions.add(data.sessionId);
-                }
-              }
-              
-              // モデル別データ
-              if (model) {
-                if (!usageByModel.has(model)) {
-                  usageByModel.set(model, {
-                    model,
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    cachedTokens: 0,
-                    totalTokens: 0,
-                    cost: 0,
-                    messages: 0,
-                    sessions: new Set(),
-                    // Detailed breakdown for analysis
-                    newInputTokens: 0,
-                    cacheCreationTokens: 0,
-                    cacheReadTokens: 0
-                  });
-                }
-                
-                const modelData = usageByModel.get(model);
-                modelData.inputTokens += metrics.inputTokens;
-                modelData.outputTokens += metrics.outputTokens;
-                modelData.cachedTokens += metrics.cachedTokens;
-                modelData.totalTokens += metrics.totalTokens;
-                modelData.messages++;
-                modelData.cost += metrics.cost;
-                
-                // Add detailed breakdown
-                modelData.newInputTokens += metrics.newInputTokens || 0;
-                modelData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
-                modelData.cacheReadTokens += metrics.cacheReadTokens || 0;
-                
-                if (data.sessionId) {
-                  modelData.sessions.add(data.sessionId);
-                }
-              }
-              
-              // プロジェクト統計
-              totalTokens += metrics.totalTokens;
-              totalCost += metrics.cost;
             }
           } catch (e) {
             // JSONパースエラーは無視
           }
         }
       }));
-      
-      projects.push({
-        name: projectDir,
-        path: projectPath,
-        totalTokens,
-        totalCost: totalCost.toFixed(4),
-        messageCount,
-        lastActivity
-      });
     }));
-    
+
+    // ---- Phase B: dedup済みエントリを集計 ----
+    const usageByDate = new Map();
+    const usageByMonth = new Map();
+    const usageByModel = new Map();
+    const detailedUsage = [];
+    const projectTotals = new Map(); // projectDir -> { totalTokens, totalCost }
+
+    for (const entry of dedupMap.values()) {
+      const { projectDir, sessionId, timestamp, model, usage } = entry;
+      const metrics = calculateUsageMetrics(usage, model);
+
+      if (timestamp) {
+        detailedUsage.push({
+          timestamp,
+          sessionId,
+          model,
+          inputTokens: metrics.inputTokens,
+          outputTokens: metrics.outputTokens,
+          cachedTokens: metrics.cachedTokens,
+          totalTokens: metrics.totalTokens,
+          cost: metrics.cost,
+          newInputTokens: metrics.newInputTokens || 0,
+          cacheCreationTokens: metrics.cacheCreationTokens || 0,
+          cacheReadTokens: metrics.cacheReadTokens || 0
+        });
+
+        // 日毎データ
+        const date = new Date(timestamp).toISOString().split('T')[0];
+        if (!usageByDate.has(date)) {
+          usageByDate.set(date, {
+            date,
+            inputTokens: 0,
+            outputTokens: 0,
+            cachedTokens: 0,
+            totalTokens: 0,
+            cost: 0,
+            sessions: new Set(),
+            newInputTokens: 0,
+            cacheCreationTokens: 0,
+            cacheReadTokens: 0
+          });
+        }
+        const dayData = usageByDate.get(date);
+        dayData.inputTokens += metrics.inputTokens;
+        dayData.outputTokens += metrics.outputTokens;
+        dayData.cachedTokens += metrics.cachedTokens;
+        dayData.totalTokens += metrics.totalTokens;
+        dayData.cost += metrics.cost;
+        dayData.newInputTokens += metrics.newInputTokens || 0;
+        dayData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
+        dayData.cacheReadTokens += metrics.cacheReadTokens || 0;
+        if (sessionId) dayData.sessions.add(sessionId);
+
+        // 月毎データ
+        const monthKey = `${new Date(timestamp).getFullYear()}-${String(new Date(timestamp).getMonth() + 1).padStart(2, '0')}`;
+        if (!usageByMonth.has(monthKey)) {
+          usageByMonth.set(monthKey, {
+            month: monthKey,
+            inputTokens: 0,
+            outputTokens: 0,
+            cachedTokens: 0,
+            totalTokens: 0,
+            cost: 0,
+            sessions: new Set(),
+            messages: 0,
+            newInputTokens: 0,
+            cacheCreationTokens: 0,
+            cacheReadTokens: 0
+          });
+        }
+        const monthData = usageByMonth.get(monthKey);
+        monthData.inputTokens += metrics.inputTokens;
+        monthData.outputTokens += metrics.outputTokens;
+        monthData.cachedTokens += metrics.cachedTokens;
+        monthData.totalTokens += metrics.totalTokens;
+        monthData.messages++;
+        monthData.cost += metrics.cost;
+        monthData.newInputTokens += metrics.newInputTokens || 0;
+        monthData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
+        monthData.cacheReadTokens += metrics.cacheReadTokens || 0;
+        if (sessionId) monthData.sessions.add(sessionId);
+      }
+
+      // モデル別データ
+      if (model) {
+        if (!usageByModel.has(model)) {
+          usageByModel.set(model, {
+            model,
+            inputTokens: 0,
+            outputTokens: 0,
+            cachedTokens: 0,
+            totalTokens: 0,
+            cost: 0,
+            messages: 0,
+            sessions: new Set(),
+            newInputTokens: 0,
+            cacheCreationTokens: 0,
+            cacheReadTokens: 0
+          });
+        }
+        const modelData = usageByModel.get(model);
+        modelData.inputTokens += metrics.inputTokens;
+        modelData.outputTokens += metrics.outputTokens;
+        modelData.cachedTokens += metrics.cachedTokens;
+        modelData.totalTokens += metrics.totalTokens;
+        modelData.messages++;
+        modelData.cost += metrics.cost;
+        modelData.newInputTokens += metrics.newInputTokens || 0;
+        modelData.cacheCreationTokens += metrics.cacheCreationTokens || 0;
+        modelData.cacheReadTokens += metrics.cacheReadTokens || 0;
+        if (sessionId) modelData.sessions.add(sessionId);
+      }
+
+      // プロジェクト統計
+      if (!projectTotals.has(projectDir)) {
+        projectTotals.set(projectDir, { totalTokens: 0, totalCost: 0 });
+      }
+      const totals = projectTotals.get(projectDir);
+      totals.totalTokens += metrics.totalTokens;
+      totals.totalCost += metrics.cost;
+    }
+
+    const projects = [...projectMeta.entries()].map(([projectDir, meta]) => {
+      const totals = projectTotals.get(projectDir) || { totalTokens: 0, totalCost: 0 };
+      return {
+        name: projectDir,
+        path: meta.path,
+        totalTokens: totals.totalTokens,
+        totalCost: totals.totalCost.toFixed(4),
+        messageCount: meta.messageCount,
+        lastActivity: meta.lastActivity
+      };
+    });
+
     // 結果を配列に変換
     const dailyData = Array.from(usageByDate.values()).map(day => ({
       ...day,

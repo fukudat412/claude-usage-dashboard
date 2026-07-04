@@ -130,10 +130,10 @@ The application reads data from these Claude Code locations:
 - **mcpService.js**: Processes MCP session logs
 - **todoService.js**: Handles todo file management data
 - **vscodeService.js**: Processes VS Code extension task data
-- **projectService.js**: Aggregates usage data by project/date/model
+- **projectService.js**: Aggregates usage data by project/date/model. Deduplicates streamed JSONL entries by `message.id` + `requestId` (largest-usage entry wins) — naive summing double-counts by ~2x
 - **pricingService.js**: Calculates costs based on Claude pricing
 - **cacheService.js**: In-memory caching for performance
-- **sessionService.js**: Parses conversation transcripts for the session browser
+- **sessionService.js**: Parses conversation transcripts for the session browser (same dedup as projectService)
 - **archiveService.js**: Snapshots daily aggregates to `data/daily-archive.json` every 6h so history survives Claude Code's ~30-day transcript cleanup; `/api/v2/daily` backfills missing days from it
 
 ### Frontend Components

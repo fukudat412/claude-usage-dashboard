@@ -76,6 +76,18 @@ async function parseSessionFile(filePath, { withMessages = false } = {}) {
   };
   const messages = [];
 
+  // ストリーミング中は同じ応答(message.id + requestId)がusage漸増・本文追記で
+  // 複数回書き込まれるため、キーごとに最終エントリだけを採用する
+  const usageByKey = new Map(); // key -> トークン合計の最大値(=最終値)
+  const assistantByKey = new Map(); // key -> messages配列のインデックス
+  let fallbackKey = 0;
+
+  const usageTotalOf = (usage) =>
+    (usage.input_tokens || 0) +
+    (usage.output_tokens || 0) +
+    (usage.cache_creation_input_tokens || 0) +
+    (usage.cache_read_input_tokens || 0);
+
   const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
 
@@ -112,30 +124,44 @@ async function parseSessionFile(filePath, { withMessages = false } = {}) {
         }
       }
     } else if (entry.type === 'assistant') {
+      const messageId = entry.message?.id;
+      const requestId = entry.requestId;
+      const key = (messageId || requestId)
+        ? (messageId || '') + ':' + (requestId || '')
+        : '__nokey__:' + (fallbackKey++);
+
       const usage = entry.message?.usage;
       if (usage) {
-        summary.totalTokens +=
-          (usage.input_tokens || 0) +
-          (usage.output_tokens || 0) +
-          (usage.cache_creation_input_tokens || 0) +
-          (usage.cache_read_input_tokens || 0);
+        const total = usageTotalOf(usage);
+        if (total > (usageByKey.get(key) || 0)) usageByKey.set(key, total);
       }
       if (entry.message?.model) summary.models.add(entry.message.model);
 
       const parts = extractAssistantParts(entry);
       if (parts) {
-        summary.assistantMessages += 1;
-        if (withMessages && messages.length < MAX_MESSAGES) {
-          messages.push({
+        if (withMessages) {
+          const message = {
             role: 'assistant',
             text: truncate(parts.text),
             tools: parts.tools,
             timestamp: entry.timestamp || null,
-          });
+          };
+          if (assistantByKey.has(key) && assistantByKey.get(key) >= 0) {
+            // 同じ応答の後続書き込み: 位置は据え置き、内容を最新に置き換える
+            messages[assistantByKey.get(key)] = message;
+          } else if (messages.length < MAX_MESSAGES) {
+            assistantByKey.set(key, messages.length);
+            messages.push(message);
+          }
+        } else if (!assistantByKey.has(key)) {
+          assistantByKey.set(key, -1);
         }
       }
     }
   }
+
+  summary.assistantMessages = assistantByKey.size;
+  summary.totalTokens = [...usageByKey.values()].reduce((a, b) => a + b, 0);
 
   const result = { ...summary, models: [...summary.models] };
   return withMessages ? { summary: result, messages } : { summary: result };
