@@ -38,6 +38,7 @@ claude-usage-dashboard/
 │   │   ├── HourlyAnalysis.tsx
 │   │   ├── DailyHourlyDetail.tsx
 │   │   ├── McpToolUsage.tsx
+│   │   ├── SessionBrowser.tsx
 │   │   └── charts/
 │   │       └── InteractiveChart.tsx
 │   ├── hooks/            # Custom hooks
@@ -46,7 +47,7 @@ claude-usage-dashboard/
 │   ├── utils/            # Common utilities
 │   │   └── formatters.ts
 │   ├── routes/           # Express routes
-│   │   └── api/          # API v2: summary, daily, monthly, hourly, mcp, projects, logs, models
+│   │   └── api/          # API v2: summary, daily, monthly, hourly, mcp, projects, logs, models, sessions
 │   ├── services/         # Business logic
 │   │   ├── mcpService.js
 │   │   ├── todoService.js
@@ -54,6 +55,8 @@ claude-usage-dashboard/
 │   │   ├── projectService.js
 │   │   ├── pricingService.js
 │   │   ├── cacheService.js
+│   │   ├── sessionService.js
+│   │   ├── archiveService.js
 │   │   └── rustProcessor.js
 │   ├── middleware/       # Express middleware
 │   │   ├── errorHandler.js
@@ -117,6 +120,7 @@ docker-compose down
 
 The application reads data from these Claude Code locations:
 - **MCP Logs**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
+- **Conversation Transcripts**: `~/.claude/projects/*/*.jsonl` (usage aggregation + session browser)
 - **Todo History**: `~/.claude/todos/`
 - **VS Code Extension**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
 
@@ -129,6 +133,8 @@ The application reads data from these Claude Code locations:
 - **projectService.js**: Aggregates usage data by project/date/model
 - **pricingService.js**: Calculates costs based on Claude pricing
 - **cacheService.js**: In-memory caching for performance
+- **sessionService.js**: Parses conversation transcripts for the session browser
+- **archiveService.js**: Snapshots daily aggregates to `data/daily-archive.json` every 6h so history survives Claude Code's ~30-day transcript cleanup; `/api/v2/daily` backfills missing days from it
 
 ### Frontend Components
 - **Dashboard.tsx**: Main overview with summary cards and charts
@@ -151,6 +157,7 @@ The application reads data from these Claude Code locations:
 - `GET /api/v2/daily`, `/api/v2/monthly`, `/api/v2/hourly` - Aggregations by period
 - `GET /api/v2/projects`, `/api/v2/models` - Aggregations by project / model
 - `GET /api/v2/mcp` - MCP session data
+- `GET /api/v2/sessions` - Conversation sessions per project (`?project=`); `/content` returns messages
 - `GET /api/v2/logs` - Log listing and content (secure)
 
 ## Build & Deployment

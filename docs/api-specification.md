@@ -229,6 +229,33 @@ MCPツール使用統計を取得します。
 
 特定プロジェクトの詳細データを取得します。
 
+### 6. 会話セッション
+
+```
+GET /sessions?project=<プロジェクト名>
+```
+
+プロジェクト内のセッション一覧（AIタイトル・期間・発言数・トークン数）を返します。
+
+```
+GET /sessions/content?project=<プロジェクト名>&session=<セッションID>
+```
+
+セッションの会話内容（user/assistantメッセージ、使用ツール、タイムスタンプ）を返します。
+`project` はプロジェクトディレクトリ名（英数字・`.` `_` `-` のみ）、`session` はセッションID
+（英数字とハイフン）で、パストラバーサルは400で拒否されます。
+
+### 7. ヘルスチェック
+
+```
+GET /api/health
+```
+
+`{ "status": "healthy", "timestamp", "uptime", "version" }` を返します（DockerのHEALTHCHECKが使用）。
+
+> **注記**: 日別使用量（`GET /daily`）は、元ログから削除された過去日を
+> `data/daily-archive.json` から補完して返します。補完された要素には `archived: true` が付きます。
+
 ## キャッシュ戦略
 
 - サマリーデータ: 5分キャッシュ

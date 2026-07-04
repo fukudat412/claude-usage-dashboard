@@ -6,6 +6,7 @@ import LogViewer from './components/LogViewer';
 import McpToolUsage from './components/McpToolUsage';
 import HourlyAnalysis from './components/HourlyAnalysis';
 import DailyHourlyDetail from './components/DailyHourlyDetail';
+import SessionBrowser from './components/SessionBrowser';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
@@ -14,7 +15,7 @@ type TabType = 'summary' | 'usage' | 'projects' | 'logs';
 type ViewMode = 'daily' | 'monthly';
 type UsageSubTab = 'daily' | 'monthly' | 'models' | 'hourly';
 type ProjectsSubTab = 'projects' | 'todos';
-type LogsSubTab = 'mcp' | 'mcpTools';
+type LogsSubTab = 'mcp' | 'mcpTools' | 'sessions';
 
 const App: React.FC = () => {
   const { usageData, loading, error, refetch } = useUsageData();
@@ -225,6 +226,12 @@ const App: React.FC = () => {
         >
           MCPツール使用状況
         </button>
+        <button 
+          className={logsSubTab === 'sessions' ? 'active' : ''}
+          onClick={() => setLogsSubTab('sessions')}
+        >
+          会話ログ
+        </button>
       </div>
     );
   };
@@ -338,6 +345,17 @@ const App: React.FC = () => {
         return (
           <div className="tab-content">
             {renderLogsSubTabs()}
+            {logsSubTab === 'sessions' && (
+              <div className="sub-content">
+                <h2>会話ログ（セッション別）</h2>
+                <SessionBrowser
+                  projects={projectRows.map((proj: Record<string, any>) => ({
+                    name: String(proj.name),
+                    fullName: String(proj.fullName),
+                  }))}
+                />
+              </div>
+            )}
             {logsSubTab === 'mcp' && (
               <div className="sub-content">
                 <h2>MCPログ</h2>

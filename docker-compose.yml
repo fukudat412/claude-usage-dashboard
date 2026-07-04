@@ -14,6 +14,8 @@ services:
       - ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro
       # VS Code extension data (read-only)
       - ~/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro
+      # Usage archive (writable — survives source-log cleanup and container rebuilds)
+      - ./data:/app/data
     environment:
       - NODE_ENV=production
       - PORT=30001

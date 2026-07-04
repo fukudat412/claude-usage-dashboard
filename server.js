@@ -3,6 +3,7 @@ const path = require('path');
 const { APP_CONFIG } = require('./src/config/paths');
 const { errorHandler, notFound } = require('./src/middleware/errorHandler');
 const { configureSecurityMiddleware } = require('./src/middleware/security');
+const { startArchiveScheduler } = require('./src/services/archiveService');
 
 // v1ルートを削除済み（v2に移行）
 
@@ -15,6 +16,7 @@ const apiMcpRoutes = require('./src/routes/api/mcp');
 const apiProjectsRoutes = require('./src/routes/api/projects');
 const apiLogsRoutes = require('./src/routes/api/logs');
 const apiModelsRoutes = require('./src/routes/api/models');
+const apiSessionsRoutes = require('./src/routes/api/sessions');
 const apiHealthRoutes = require('./src/routes/api/health');
 
 const app = express();
@@ -45,6 +47,7 @@ app.use('/api/v2/mcp', apiMcpRoutes);
 app.use('/api/v2/projects', apiProjectsRoutes);
 app.use('/api/v2/logs', apiLogsRoutes);
 app.use('/api/v2/models', apiModelsRoutes);
+app.use('/api/v2/sessions', apiSessionsRoutes);
 
 // SPAのためのフォールバック - 本番環境のみ
 if (process.env.NODE_ENV === 'production') {
@@ -58,6 +61,9 @@ app.use(notFound);
 
 // エラーハンドリング
 app.use(errorHandler);
+
+// 日次集計のアーカイブ（元ログ削除後も履歴を保持）
+startArchiveScheduler();
 
 // サーバー起動
 app.listen(PORT, () => {

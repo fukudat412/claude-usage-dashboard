@@ -29,6 +29,7 @@ Claude Codeの使用量を可視化するWebサービスです。自分のPC上�
 ### ログ・ツール
 - **MCPログ**: Claude Code IDE統合のセッション履歴
 - **MCPツール使用状況**: 各MCPツールの詳細な使用統計と可視化
+- **会話ログ**: セッションごとの会話内容をチャット形式で閲覧（AIタイトル・使用ツール・タイムスタンプ付き）
 
 ### 技術機能
 - **インタラクティブチャート**: エクスポート・ドリルダウン・フィルタリング機能
@@ -199,8 +200,23 @@ npm start
 以下のClaude Codeデータを読み取ります：
 
 - **MCPログ**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
+- **会話トランスクリプト**: `~/.claude/projects/*/*.jsonl`（使用量集計・会話ログ表示）
 - **Todo履歴**: `~/.claude/todos/`
 - **VS Code拡張ログ**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
+
+## データの永続化
+
+Claude Codeは既定で約30日（`cleanupPeriodDays`）より古い会話トランスクリプトを削除するため、
+何もしないと使用量の履歴も約1ヶ月分しか残りません。本ダッシュボードは2つの対策を取っています:
+
+1. **日次集計のアーカイブ（自動）**: サーバー起動時と6時間ごとに日次集計を `data/daily-archive.json`
+   に保存します。元ログが削除された日付はアーカイブから自動補完され、`archived: true` フラグが付きます。
+   Docker利用時は `./data` がボリュームとしてマウントされます。
+2. **元ログの保持期間延長（推奨・手動）**: `~/.claude/settings.json` に以下を追加すると、
+   Claude Code自体がトランスクリプトを長期間保持します（会話ログの閲覧にも必要）:
+   ```json
+   { "cleanupPeriodDays": 3650 }
+   ```
 
 ## 技術仕様
 

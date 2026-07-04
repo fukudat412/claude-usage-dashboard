@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { processProjectData } = require('../../services/projectService');
+const { mergeWithArchive } = require('../../services/archiveService');
 const cacheService = require('../../services/cacheService');
 
 /**
@@ -68,7 +69,9 @@ router.get('/', asyncHandler(async (req, res) => {
   const startTime = Date.now();
 
   const projectData = await processProjectData();
-  let dailyUsage = projectData.dailyUsage || [];
+  // 元ログから消えた過去日をアーカイブから補完する
+  // （時間帯フィルタはライブのdetailedUsageに依存するため、アーカイブ日には効かない）
+  let dailyUsage = await mergeWithArchive(projectData.dailyUsage || []);
 
   // 日付フィルタリング
   if (startDate || endDate) {
