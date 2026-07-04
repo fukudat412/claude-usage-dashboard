@@ -9,6 +9,7 @@
     "dev:server": "nodemon server.js",
     "dev:client": "PORT=30000 react-scripts start",
     "build": "react-scripts build",
+    "typecheck": "tsc --noEmit",
     "start": "node server.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

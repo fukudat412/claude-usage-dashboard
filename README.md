@@ -32,7 +32,7 @@ Claude Codeの使用量を可視化するWebサービスです。自分のPC上�
 
 ### 技術機能
 - **インタラクティブチャート**: エクスポート・ドリルダウン・フィルタリング機能
-- **型安全性**: 完全TypeScript化による開発者体験とコード品質の向上
+- **型安全性**: フロントエンドのTypeScript化による開発者体験とコード品質の向上
 - **キャッシュ機能**: データの高速読み込み
 
 ## セットアップ
@@ -152,7 +152,7 @@ npm start
 
 ### 完全TypeScript化の実装
 
-プロジェクト全体が**完全にTypeScript化**されており、以下の特徴があります：
+フロントエンドは**完全にTypeScript化**されており、以下の特徴があります（バックエンドはCommonJSのJavaScriptで、`tsconfig.json` の `allowJs` で型チェック対象に含まれます）：
 
 #### 型安全性
 - **Strict Mode**: `tsconfig.json`でstrict modeを有効化
@@ -161,7 +161,6 @@ npm start
 - **ジェネリック対応**: `DataTable`コンポーネントなどでジェネリック型を活用
 
 #### 主要な型定義
-- `SessionInfo`: WebSocketセッション管理用
 - `ChartDataPoint`: チャートデータの型安全性
 - `McpLogEntry`: MCPログエントリの構造
 - `TableColumn`: データテーブルの列定義
@@ -172,53 +171,6 @@ npm start
 - **コンパイル時エラー検出**: 実行前に型エラーを検出
 - **型安全なプロパティアクセス**: typoや不正なプロパティアクセスを防止
 - **リファクタリング安全性**: 型システムによる安全なコード変更
-
-## MCPサーバーセットアップ（セッション管理用）
-
-1. MCPサーバーの依存関係をインストール:
-```bash
-cd mcp-server
-npm install
-```
-
-2. Claude Codeの設定ファイルに以下を追加:
-
-**基本セッション管理:**
-```json
-{
-  "mcpServers": {
-    "claude-session": {
-      "command": "node",
-      "args": ["/Users/gondotomotaka/fukuda_work/claude-usage-dashboard/mcp-server/index.js"],
-      "cwd": "/Users/gondotomotaka/fukuda_work/claude-usage-dashboard"
-    }
-  }
-}
-```
-
-**オーケストレーション対応（推奨）:**
-```json
-{
-  "mcpServers": {
-    "claude-code-orchestration": {
-      "command": "node",
-      "args": ["/Users/gondotomotaka/fukuda_work/claude-usage-dashboard/mcp-server/index.js"],
-      "env": {
-        "API_URL": "http://localhost:52003",
-        "WORKER_ID": "claude-worker-1",
-        "WORKER_SPECIALIZATIONS": "code,review,documentation"
-      },
-      "cwd": "/Users/gondotomotaka/fukuda_work/claude-usage-dashboard"
-    }
-  }
-}
-```
-
-3. MCPツールの使用例:
-- `initialize_session`: ダッシュボードとの接続を初期化
-- `create_subsession`: 新しいサブセッションを作成
-- `update_session_status`: セッションステータスを更新
-- `respond_to_subsession`: サブセッションへのレスポンスを送信
 
 ## MCPツール使用状況機能
 
@@ -252,10 +204,10 @@ npm install
 
 ## 技術仕様
 
-- **バックエンド**: Node.js + Express + TypeScript
+- **バックエンド**: Node.js + Express (JavaScript)
 - **フロントエンド**: React + TypeScript
 - **データ形式**: JSON
-- **型安全性**: 完全TypeScript化（strict mode対応）
+- **型安全性**: フロントエンドの完全TypeScript化（strict mode対応）
 - **スタイル**: CSS（レスポンシブデザイン）
 - **パッケージ管理**: 統合されたpackage.json（Flat構成）
 - **コンテナ**: Docker（マルチステージビルド）
@@ -276,7 +228,6 @@ claude-usage-dashboard/
 │   │   ├── McpToolUsage.tsx
 │   │   ├── HourlyAnalysis.tsx      # 時間帯別分析コンポーネント
 │   │   ├── DailyHourlyDetail.tsx   # 日別時間帯詳細モーダル
-│   │   ├── SessionManager.tsx
 │   │   ├── FilterPanel.tsx
 │   │   ├── SummaryCard.tsx
 │   │   ├── UsageChart.tsx
@@ -284,46 +235,45 @@ claude-usage-dashboard/
 │   │       └── InteractiveChart.tsx
 │   ├── hooks/            # カスタムフック（TypeScript）
 │   │   ├── useUsageData.ts
-│   │   ├── useSocket.ts
 │   │   └── useChartData.ts
 │   ├── utils/            # 共通ユーティリティ（TypeScript）
 │   │   └── formatters.ts
 │   ├── types/            # 型定義
 │   │   └── index.ts
 │   ├── routes/           # Express ルート
-│   │   ├── usage.js
-│   │   ├── logs.js
-│   │   ├── health.js
-│   │   ├── sessions.js
-│   │   └── api/          # API v2エンドポイント
+│   │   └── api/          # APIエンドポイント
+│   │       ├── health.js         # ヘルスチェック
 │   │       ├── summary.js
 │   │       ├── daily.js
 │   │       ├── monthly.js
 │   │       ├── hourly.js         # 時間帯別API
 │   │       ├── mcp.js
-│   │       └── projects.js
-│   ├── services/         # ビジネスロジック（TypeScript）
-│   │   ├── mcpService.ts
+│   │       ├── models.js
+│   │       ├── projects.js
+│   │       └── logs.js
+│   ├── services/         # ビジネスロジック
+│   │   ├── mcpService.js
 │   │   ├── todoService.js
 │   │   ├── vscodeService.js
 │   │   ├── projectService.js
-│   │   ├── pricingService.ts     # 価格計算・最新モデル対応
+│   │   ├── pricingService.js     # 価格計算・最新モデル対応
 │   │   ├── cacheService.js
-│   │   └── socketService.js
-│   ├── middleware/       # Express ミドルウェア（TypeScript）
-│   │   ├── errorHandler.ts
+│   │   └── rustProcessor.js      # rust-processor連携（任意の高速化）
+│   ├── middleware/       # Express ミドルウェア
+│   │   ├── errorHandler.js
 │   │   └── security.js
-│   ├── config/          # 設定ファイル（TypeScript）
-│   │   └── paths.ts
+│   ├── config/          # 設定ファイル
+│   │   └── paths.js
 │   ├── App.tsx          # メインReactコンポーネント（TypeScript）
 │   └── index.tsx        # Reactエントリーポイント（TypeScript）
 ├── public/              # React パブリックファイル
 ├── build/               # React ビルド出力
 ├── docs/                # プロジェクトドキュメント
-├── mcp-server/          # MCPサーバー実装
+├── rust-processor/      # JSONLパース高速化CLI（Rust・ビルドされていれば自動利用）
 ├── Dockerfile           # 本番用Docker設定
 ├── Dockerfile.dev       # 開発用Docker設定
-└── docker-compose.yml   # Docker Compose設定
+├── docker-compose.yml   # Docker Compose設定
+└── docker-compose.dev.yml # 開発用Docker Compose設定
 ```
 
 ## アーキテクチャ
@@ -347,11 +297,10 @@ claude-usage-dashboard/
   - `HourlyAnalysis.tsx`: 時間帯別分析コンポーネント（テーブル・ヒートマップ・チャート）
   - `DailyHourlyDetail.tsx`: 日別時間帯詳細モーダル（0-23時詳細表示）
   - `UsageChart.tsx`: トークン使用量チャート（インタラクティブ機能付き）
-  - `SessionManager.tsx`: WebSocketベースのセッション管理
   - `FilterPanel.tsx`: 高度なフィルタリング機能
   - `DataTable.tsx`: 汎用データテーブル（ジェネリック型対応、行クリック対応）
   - `InteractiveChart.tsx`: エクスポート・ドリルダウン機能付きチャート
-- **Hooks**: TypeScript化されたカスタムフック（データフェッチ・WebSocket等）
+- **Hooks**: TypeScript化されたカスタムフック（データフェッチ・チャートデータ加工）
 - **Types**: 包括的な型定義（`src/types/index.ts`）
 - **Utils**: 型安全な共通ユーティリティ関数
 
