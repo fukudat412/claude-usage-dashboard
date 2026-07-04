@@ -1,6 +1,7 @@
 import React from 'react';
 import SummaryCard from './SummaryCard';
 import { formatCompactNumber } from '../utils/formatters';
+import BudgetBar from './BudgetBar';
 import UsageChart from './UsageChart';
 import { UsageData } from '../types';
 
@@ -41,8 +42,18 @@ const Dashboard: React.FC<DashboardProps> = ({
   const chartData = viewMode === 'daily' ? dailyUsage : monthlyUsage;
   const typedSummary = summary as Summary;
 
+  // 今月のコスト（ローカルタイムの YYYY-MM でマッチ）
+  const currentMonth = new Date().toLocaleDateString('sv-SE').slice(0, 7);
+  const currentMonthEntry = (monthlyUsage as any[])?.find(
+    (entry) => entry.month === currentMonth
+  );
+  const currentMonthCost = Number(currentMonthEntry?.cost || 0);
+
   return (
     <div className="dashboard">
+      {/* 月次予算 */}
+      <BudgetBar currentMonthCost={currentMonthCost} month={currentMonth} />
+
       {/* サマリーセクション */}
       <div className="summary-grid">
         <SummaryCard
