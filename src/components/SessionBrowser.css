@@ -157,3 +157,113 @@
     max-height: 92vh;
   }
 }
+
+/* 全文検索 */
+.session-search-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.session-search-input {
+  flex: 1;
+  max-width: 480px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.session-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+}
+
+.session-search-button,
+.session-search-clear {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.session-search-button {
+  background: #667eea;
+  color: white;
+}
+
+.session-search-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.session-search-clear {
+  background: white;
+  border-color: #d1d5db;
+  color: #555;
+}
+
+.search-results-count {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.search-result-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-result-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.search-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.search-result-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.search-result-meta {
+  font-size: 0.75rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+.search-snippet {
+  margin: 0.3rem 0;
+  font-size: 0.8rem;
+  color: #555;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.search-snippet mark {
+  background: #fde68a;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.snippet-role {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: #667eea;
+  font-weight: 600;
+  margin-right: 6px;
+}

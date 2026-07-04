@@ -177,4 +177,94 @@ async function getSessionMessages(projectName, sessionId) {
   return parseSessionFile(filePath, { withMessages: true });
 }
 
-module.exports = { listSessions, getSessionMessages };
+const MAX_SEARCH_SESSIONS = 50;
+const SNIPPETS_PER_SESSION = 3;
+const SNIPPET_CONTEXT = 60;
+
+function buildSnippet(text, index, queryLength) {
+  const start = Math.max(0, index - SNIPPET_CONTEXT);
+  const end = Math.min(text.length, index + queryLength + SNIPPET_CONTEXT);
+  return `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
+}
+
+/**
+ * 全プロジェクト（またはプロジェクト指定）の会話を横断全文検索する。
+ * 大文字小文字を区別しない部分一致。
+ */
+async function searchSessions(query, projectName = null) {
+  if (!query || String(query).trim().length < 2) {
+    throw new AppError('Query must be at least 2 characters', 400);
+  }
+  const needle = String(query).toLowerCase();
+
+  const root = path.resolve(CLAUDE_PATHS.projects);
+  let projectDirs;
+  if (projectName) {
+    projectDirs = [path.basename(resolveProjectDir(projectName))];
+  } else {
+    projectDirs = (await fs.readdir(root).catch(() => []))
+      .filter((name) => PROJECT_NAME_PATTERN.test(name));
+  }
+
+  const results = [];
+  for (const project of projectDirs) {
+    const dir = path.join(root, project);
+    const stat = await fs.stat(dir).catch(() => null);
+    if (!stat || !stat.isDirectory()) continue;
+    const files = (await fs.readdir(dir)).filter((f) => f.endsWith('.jsonl'));
+
+    for (const file of files) {
+      if (results.length >= MAX_SEARCH_SESSIONS) return { query, results, truncated: true };
+      const filePath = path.join(dir, file);
+      const sessionId = path.basename(file, '.jsonl');
+      let hit = null;
+
+      const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+      const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+      let title = null;
+      let endTime = null;
+      for await (const line of rl) {
+        if (!line) continue;
+        let entry;
+        try { entry = JSON.parse(line); } catch { continue; }
+        if (entry.type === 'ai-title' && entry.aiTitle) { title = entry.aiTitle; continue; }
+        if (entry.timestamp) endTime = entry.timestamp;
+
+        let role = null;
+        let text = null;
+        if (entry.type === 'user') {
+          text = extractUserText(entry);
+          role = 'user';
+        } else if (entry.type === 'assistant') {
+          const parts = extractAssistantParts(entry);
+          text = parts?.text || null;
+          role = 'assistant';
+        }
+        if (!text) continue;
+
+        const index = text.toLowerCase().indexOf(needle);
+        if (index === -1) continue;
+        if (!hit) hit = { project, sessionId, matchCount: 0, snippets: [] };
+        hit.matchCount += 1;
+        if (hit.snippets.length < SNIPPETS_PER_SESSION) {
+          hit.snippets.push({
+            role,
+            snippet: buildSnippet(text, index, needle.length),
+            timestamp: entry.timestamp || null,
+          });
+        }
+      }
+
+      if (hit) {
+        hit.title = title;
+        hit.endTime = endTime;
+        results.push(hit);
+      }
+    }
+  }
+
+  results.sort((a, b) => String(b.endTime || '').localeCompare(String(a.endTime || '')));
+  return { query, results, truncated: false };
+}
+
+module.exports = { listSessions, getSessionMessages, searchSessions };
