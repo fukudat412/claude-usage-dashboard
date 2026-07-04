@@ -59,17 +59,10 @@
 }
 
 .peak-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 1.5rem;
+  background: #f8f9fa;
+  border-left: 4px solid #667eea;
+  padding: 1.25rem 1.5rem;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.peak-icon {
-  font-size: 2.5rem;
 }
 
 .peak-info {
@@ -77,20 +70,21 @@
 }
 
 .peak-label {
-  font-size: 0.9rem;
-  opacity: 0.9;
+  font-size: 0.85rem;
+  color: #666;
   margin-bottom: 0.25rem;
 }
 
 .peak-time {
   font-size: 1.5rem;
   font-weight: 700;
+  color: #4c51bf;
   margin-bottom: 0.25rem;
 }
 
 .peak-detail {
   font-size: 0.85rem;
-  opacity: 0.8;
+  color: #666;
 }
 
 .time-distribution {
@@ -239,7 +233,7 @@
 .legend-gradient {
   width: 200px;
   height: 20px;
-  background: linear-gradient(to right, #f3f4f6, #dbeafe, #93c5fd, #fb923c, #ef4444);
+  background: linear-gradient(to right, #f3f4f6, #e0e7ff, #a5b4fc, #6366f1, #4338ca);
   border-radius: 10px;
 }
 

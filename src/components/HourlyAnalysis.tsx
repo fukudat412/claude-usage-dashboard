@@ -106,10 +106,10 @@ const HourlyAnalysis: React.FC<HourlyAnalysisProps> = ({ startDate, endDate, for
     if (!statistics) return null;
 
     const timeDistribution = [
-      { label: '朝 (6-12時)', value: statistics.morningUsage, color: '#fbbf24' },
-      { label: '昼 (12-18時)', value: statistics.afternoonUsage, color: '#f59e0b' },
-      { label: '夜 (18-24時)', value: statistics.eveningUsage, color: '#d97706' },
-      { label: '深夜 (0-6時)', value: statistics.nightUsage, color: '#92400e' }
+      { label: '朝 (6-12時)', value: statistics.morningUsage, color: '#667eea' },
+      { label: '昼 (12-18時)', value: statistics.afternoonUsage, color: '#667eea' },
+      { label: '夜 (18-24時)', value: statistics.eveningUsage, color: '#667eea' },
+      { label: '深夜 (0-6時)', value: statistics.nightUsage, color: '#667eea' }
     ];
 
     return (
@@ -138,7 +138,6 @@ const HourlyAnalysis: React.FC<HourlyAnalysisProps> = ({ startDate, endDate, for
           <h4>ピーク時間帯</h4>
           <div className="peak-grid">
             <div className="peak-card">
-              <div className="peak-icon">💰</div>
               <div className="peak-info">
                 <div className="peak-label">コストピーク</div>
                 <div className="peak-time">{formatHour(statistics.peakCostHour.hour)}</div>
@@ -148,7 +147,6 @@ const HourlyAnalysis: React.FC<HourlyAnalysisProps> = ({ startDate, endDate, for
               </div>
             </div>
             <div className="peak-card">
-              <div className="peak-icon">🔢</div>
               <div className="peak-info">
                 <div className="peak-label">トークンピーク</div>
                 <div className="peak-time">{formatHour(statistics.peakTokenHour.hour)}</div>
@@ -158,7 +156,6 @@ const HourlyAnalysis: React.FC<HourlyAnalysisProps> = ({ startDate, endDate, for
               </div>
             </div>
             <div className="peak-card">
-              <div className="peak-icon">📊</div>
               <div className="peak-info">
                 <div className="peak-label">リクエストピーク</div>
                 <div className="peak-time">{formatHour(statistics.peakRequestHour.hour)}</div>
@@ -261,10 +258,10 @@ const HourlyAnalysis: React.FC<HourlyAnalysisProps> = ({ startDate, endDate, for
       if (cost === 0) return '#f3f4f6';
       const intensity = Math.min(cost / maxCost, 1);
       // 青から赤へのグラデーション
-      if (intensity < 0.25) return '#dbeafe';
-      if (intensity < 0.5) return '#93c5fd';
-      if (intensity < 0.75) return '#fb923c';
-      return '#ef4444';
+      if (intensity < 0.25) return '#e0e7ff';
+      if (intensity < 0.5) return '#a5b4fc';
+      if (intensity < 0.75) return '#6366f1';
+      return '#4338ca';
     };
 
     return (
@@ -375,19 +372,19 @@ const HourlyAnalysis: React.FC<HourlyAnalysisProps> = ({ startDate, endDate, for
           className={activeView === 'table' ? 'active' : ''}
           onClick={() => setActiveView('table')}
         >
-          📋 テーブル
+          テーブル
         </button>
         <button
           className={activeView === 'heatmap' ? 'active' : ''}
           onClick={() => setActiveView('heatmap')}
         >
-          🔥 ヒートマップ
+          ヒートマップ
         </button>
         <button
           className={activeView === 'chart' ? 'active' : ''}
           onClick={() => setActiveView('chart')}
         >
-          📊 チャート
+          チャート
         </button>
       </div>
 
