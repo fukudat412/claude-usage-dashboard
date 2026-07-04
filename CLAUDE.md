@@ -16,33 +16,40 @@ claude-usage-dashboard/
 ├── package.json           # Unified package.json (Flat structure)
 ├── server.js             # Express server entry point
 ├── src/
-│   ├── components/        # React components
-│   │   ├── Dashboard.js
-│   │   ├── DataTable.js
-│   │   ├── LogViewer.js
-│   │   ├── SummaryCard.js
-│   │   └── UsageChart.js
+│   ├── components/        # React components (TypeScript)
+│   │   ├── Dashboard.tsx
+│   │   ├── DataTable.tsx
+│   │   ├── LogViewer.tsx
+│   │   ├── SummaryCard.tsx
+│   │   ├── UsageChart.tsx
+│   │   ├── FilterPanel.tsx
+│   │   ├── HourlyAnalysis.tsx
+│   │   ├── DailyHourlyDetail.tsx
+│   │   ├── McpToolUsage.tsx
+│   │   └── charts/
+│   │       └── InteractiveChart.tsx
 │   ├── hooks/            # Custom hooks
-│   │   └── useUsageData.js
+│   │   ├── useUsageData.ts
+│   │   └── useChartData.ts
 │   ├── utils/            # Common utilities
-│   │   └── formatters.js
+│   │   └── formatters.ts
 │   ├── routes/           # Express routes
-│   │   ├── usage.js
-│   │   ├── logs.js
-│   │   └── health.js
+│   │   └── api/          # API v2: summary, daily, monthly, hourly, mcp, projects, logs, models
 │   ├── services/         # Business logic
 │   │   ├── mcpService.js
 │   │   ├── todoService.js
 │   │   ├── vscodeService.js
 │   │   ├── projectService.js
 │   │   ├── pricingService.js
-│   │   └── cacheService.js
+│   │   ├── cacheService.js
+│   │   └── rustProcessor.js
 │   ├── middleware/       # Express middleware
-│   │   └── errorHandler.js
+│   │   ├── errorHandler.js
+│   │   └── security.js
 │   ├── config/          # Configuration
 │   │   └── paths.js
-│   ├── App.js           # Main React component
-│   └── index.js         # React entry point
+│   ├── App.tsx           # Main React component
+│   └── index.tsx         # React entry point
 ├── public/              # React public files
 ├── build/               # React build output
 ├── docs/                # Project documentation
@@ -81,7 +88,7 @@ npm start
 # Production build and run
 docker build -t claude-usage-dashboard .
 docker run -d --name claude-dashboard \
-  -p 3001:3001 \
+  -p 30001:30001 \
   -v ~/.claude:/home/nodejs/.claude:ro \
   -v ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro \
   -v "$HOME/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro" \
@@ -112,11 +119,11 @@ The application reads data from these Claude Code locations:
 - **cacheService.js**: In-memory caching for performance
 
 ### Frontend Components
-- **Dashboard.js**: Main overview with summary cards and charts
-- **DataTable.js**: Reusable table component with sorting/formatting
-- **LogViewer.js**: Modal for viewing log file contents
-- **UsageChart.js**: Recharts-based visualization
-- **useUsageData.js**: Custom hook for data fetching
+- **Dashboard.tsx**: Main overview with summary cards and charts
+- **DataTable.tsx**: Reusable table component with sorting/formatting
+- **LogViewer.tsx**: Modal for viewing log file contents
+- **UsageChart.tsx**: Recharts-based visualization
+- **useUsageData.ts**: Custom hook for data fetching
 
 ### Security Features
 - Path traversal prevention in log content endpoint
@@ -127,17 +134,19 @@ The application reads data from these Claude Code locations:
 
 ## API Endpoints
 
-- `GET /api/usage` - Complete usage data
-- `GET /api/health` - Health check
-- `GET /api/log-content/:type/:filename` - Log file content (secure)
+- `GET /api/v2/summary` - Usage summary
+- `GET /api/v2/daily`, `/api/v2/monthly`, `/api/v2/hourly` - Aggregations by period
+- `GET /api/v2/projects`, `/api/v2/models` - Aggregations by project / model
+- `GET /api/v2/mcp` - MCP session data
+- `GET /api/v2/logs` - Log listing and content (secure)
 
 ## Build & Deployment
 
 ### Docker Specifications
 - **Base Image**: Node.js 18 Alpine Linux
 - **Security**: Non-root user (nodejs:1001)
-- **Port**: 3001
-- **Health Check**: `/api/health` endpoint
+- **Port**: 30001 (React dev server: 30000)
+- **Health Check**: `/api/health` endpoint (note: not implemented in the API — the container healthcheck currently always fails)
 - **Signal Handling**: dumb-init for proper process management
 
 ### Volume Mounts
@@ -211,7 +220,7 @@ npm run test:coverage
 1. **CSS not updating in Docker**: Rebuild image after CSS changes
 2. **Volume mount issues**: Ensure correct path escaping for spaces
 3. **Permission errors**: Check file permissions on mounted volumes
-4. **Port conflicts**: Ensure port 3001 is available
+4. **Port conflicts**: Ensure ports 30000 (React dev) and 30001 (Express) are available
 
 ### Debug Commands
 ```bash
@@ -222,7 +231,7 @@ docker logs claude-dashboard
 docker exec claude-dashboard ls -la /app/
 
 # Test API directly
-curl http://localhost:3001/api/health
+curl http://localhost:30001/api/v2/summary
 ```
 
 ## Security Notes
@@ -241,6 +250,6 @@ curl http://localhost:3001/api/health
 
 ---
 
-**Access the dashboard**: http://localhost:3001
+**Access the dashboard**: http://localhost:30001 (production) / http://localhost:30000 (development frontend)
 
 For detailed improvement suggestions, see `docs/improvement-suggestions.md`

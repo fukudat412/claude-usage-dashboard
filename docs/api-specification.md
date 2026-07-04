@@ -7,7 +7,7 @@ Claude Usage Dashboard API v2では、データを効率的に取得するため
 ## ベースURL
 
 ```
-http://localhost:3001/api/v2
+http://localhost:30001/api/v2
 ```
 
 ## 共通仕様

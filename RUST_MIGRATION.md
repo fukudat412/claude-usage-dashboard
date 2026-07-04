@@ -78,7 +78,7 @@ npm run dev:server
 cd rust-backend
 cargo run --release
 
-# Expressサーバーを起動 (ポート3001)
+# Expressサーバーを起動 (ポート30001)
 USE_RUST_BACKEND=true npm run dev:server
 ```
 
@@ -253,7 +253,7 @@ source ~/.cargo/env
 ```bash
 # プロセスを確認
 lsof -i :8080
-lsof -i :3001
+lsof -i :30001
 
 # プロセスを停止
 kill -9 <PID>

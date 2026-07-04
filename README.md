@@ -191,7 +191,7 @@ docker-compose down
 docker-compose logs -f
 
 # ヘルスチェック
-curl http://localhost:30001/api/health
+curl http://localhost:30001/api/v2/summary
 ```
 
 ### ローカルでの実行
@@ -228,7 +228,7 @@ npm run dev:server
 npm start
 ```
 
-アプリケーションは http://localhost:3001 でアクセスできます。
+アプリケーションは http://localhost:30001 でアクセスできます。開発モード時のフロントエンドは http://localhost:30000 で起動します。
 
 ## TypeScript移行について
 
@@ -442,7 +442,7 @@ claude-usage-dashboard/
 ### 本番用イメージ
 - **ベースイメージ**: Node.js 18 Alpine Linux
 - **セキュリティ**: 非rootユーザー (nodejs:1001) で実行
-- **ポート**: 3001
+- **ポート**: 30001
 - **ヘルスチェック**: `/api/health` エンドポイント
 - **信号処理**: dumb-init による適切なプロセス管理
 

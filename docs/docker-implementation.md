@@ -50,10 +50,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
 COPY --from=builder --chown=nodejs:nodejs /app/client/build ./client/build
 USER nodejs
-EXPOSE 3001
-ENV NODE_ENV=production PORT=3001 LOG_LEVEL=info
+EXPOSE 30001
+ENV NODE_ENV=production PORT=30001 LOG_LEVEL=info
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:30001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]
 ```
@@ -70,7 +70,7 @@ services:
       target: production
     container_name: claude-dashboard-prod
     ports:
-      - "3001:3001"
+      - "30001:30001"
     volumes:
       # Claude configuration (read-only)
       - ~/.claude:/home/nodejs/.claude:ro
@@ -80,11 +80,11 @@ services:
       - ~/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=30001
       - LOG_LEVEL=info
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:30001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -96,7 +96,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: claude-dashboard-dev
     ports:
-      - "3001:3001"
+      - "30001:30001"
     volumes:
       # Source code for hot reload
       - .:/app
@@ -110,7 +110,7 @@ services:
       - ~/Library/Application Support/Code:/home/nodejs/Library/Application Support/Code:ro
     environment:
       - NODE_ENV=development
-      - PORT=3001
+      - PORT=30001
       - LOG_LEVEL=debug
     profiles:
       - dev
@@ -140,11 +140,11 @@ RUN npm install && \
 COPY . .
 
 # Expose port
-EXPOSE 3001
+EXPOSE 30001
 
 # Set environment variables for development
 ENV NODE_ENV=development
-ENV PORT=3001
+ENV PORT=30001
 ENV LOG_LEVEL=debug
 
 # Start application with nodemon for hot reload
@@ -163,7 +163,7 @@ docker build -t claude-usage-dashboard .
 # コンテナ起動
 docker run -d \
   --name claude-dashboard \
-  -p 3001:3001 \
+  -p 30001:30001 \
   -v ~/.claude:/home/nodejs/.claude:ro \
   -v ~/Library/Caches/claude-cli-nodejs:/home/nodejs/Library/Caches/claude-cli-nodejs:ro \
   -v ~/Library/Application\ Support/Code:/home/nodejs/Library/Application\ Support/Code:ro \
@@ -193,7 +193,7 @@ docker-compose ps
 
 ```bash
 # ヘルスチェックエンドポイント
-curl http://localhost:3001/api/health
+curl http://localhost:30001/api/health
 
 # 期待される応答
 {
@@ -414,9 +414,9 @@ USER nodejs
 # シグナルハンドリングのためdumb-initを使用
 ENTRYPOINT ["dumb-init", "--"]
 
-EXPOSE 3001
+EXPOSE 30001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:30001/api/health || exit 1
 
 CMD ["npm", "start"]
 ```
@@ -451,7 +451,7 @@ RUN addgroup -g 1001 -S nodejs && \
     chown -R nodejs:nodejs /app
 
 USER nodejs
-EXPOSE 3001
+EXPOSE 30001
 CMD ["npm", "start"]
 ```
 
