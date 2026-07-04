@@ -1,0 +1,24 @@
+.model-stacked-chart {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.model-stacked-chart h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.model-chart-loading,
+.model-chart-error {
+  color: #888;
+  font-size: 0.85rem;
+  padding: 1rem 0;
+}
+
+.model-chart-error {
+  color: #b91c1c;
+}

@@ -155,7 +155,7 @@ The application reads data from these Claude Code locations:
 - `GET /api/health` - Health check (used by Docker HEALTHCHECK)
 - `GET /api/v2/summary` - Usage summary
 - `GET /api/v2/daily`, `/api/v2/monthly`, `/api/v2/hourly` - Aggregations by period
-- `GET /api/v2/projects`, `/api/v2/models` - Aggregations by project / model
+- `GET /api/v2/projects`, `/api/v2/models` - Aggregations by project / model; `/api/v2/models/daily` - daily cost per model (stacked chart)
 - `GET /api/v2/mcp` - MCP session data
 - `GET /api/v2/sessions` - Conversation sessions per project (`?project=`); `/content` returns messages; `/search?q=` full-text search across projects
 - `GET /api/v2/logs` - Log listing and content (secure)

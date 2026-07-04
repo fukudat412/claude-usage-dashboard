@@ -7,6 +7,7 @@ import McpToolUsage from './components/McpToolUsage';
 import HourlyAnalysis from './components/HourlyAnalysis';
 import DailyHourlyDetail from './components/DailyHourlyDetail';
 import SessionBrowser from './components/SessionBrowser';
+import ModelStackedChart from './components/ModelStackedChart';
 import useUsageData from './hooks/useUsageData';
 import { formatBytes, formatDate, formatNumber } from './utils/formatters';
 import { McpLogEntry } from './types';
@@ -295,6 +296,7 @@ const App: React.FC = () => {
             {usageSubTab === 'models' && (
               <div className="sub-content">
                 <h2>モデル別使用量</h2>
+                <ModelStackedChart />
                 <DataTable
                   data={(usageData as any).modelUsage || []}
                   columns={modelColumns}

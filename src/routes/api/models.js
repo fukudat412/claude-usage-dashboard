@@ -5,6 +5,61 @@ const { processProjectData } = require('../../services/projectService');
 const cacheService = require('../../services/cacheService');
 
 /**
+ * 日別×モデル別のコスト（積み上げチャート用）
+ */
+router.get('/daily', asyncHandler(async (req, res) => {
+  const cacheKey = 'modelsDaily';
+  const cached = cacheService.getCache(cacheKey);
+  if (cached) {
+    return res.json(cached);
+  }
+
+  const projectData = await processProjectData();
+  const detailed = projectData.detailedUsage || [];
+
+  // date -> model -> cost を集計
+  const byDate = new Map();
+  const modelTotals = new Map();
+  for (const entry of detailed) {
+    if (!entry.timestamp || !entry.model) continue;
+    if (entry.model.startsWith('<')) continue; // <synthetic> 等の内部プレースホルダを除外
+    const date = new Date(entry.timestamp).toISOString().split('T')[0];
+    const cost = Number(entry.cost) || 0;
+    if (!byDate.has(date)) byDate.set(date, new Map());
+    const models = byDate.get(date);
+    models.set(entry.model, (models.get(entry.model) || 0) + cost);
+    modelTotals.set(entry.model, (modelTotals.get(entry.model) || 0) + cost);
+  }
+
+  // コスト上位5モデル + その他
+  const ranked = [...modelTotals.entries()]
+    .filter(([, cost]) => cost > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const topModels = ranked.slice(0, 5).map(([model]) => model);
+  const hasOther = ranked.length > 5;
+
+  const data = [...byDate.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, models]) => {
+      const row = { date };
+      let other = 0;
+      for (const [model, cost] of models.entries()) {
+        if (topModels.includes(model)) {
+          row[model] = Number(cost.toFixed(4));
+        } else {
+          other += cost;
+        }
+      }
+      if (hasOther && other > 0) row['その他'] = Number(other.toFixed(4));
+      return row;
+    });
+
+  const result = { models: hasOther ? [...topModels, 'その他'] : topModels, data };
+  cacheService.setCache(cacheKey, result);
+  res.json(result);
+}));
+
+/**
  * モデル別使用量統計を取得
  */
 router.get('/', asyncHandler(async (req, res) => {
