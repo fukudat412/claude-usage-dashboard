@@ -170,7 +170,4 @@ ehthumbs.db
 Thumbs.db
 
 # Rust
-rust-benchmark/target/
-rust-processor/target/
 **/target/
-**/Cargo.lockrust-backend/target/
