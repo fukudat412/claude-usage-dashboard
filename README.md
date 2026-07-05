@@ -288,7 +288,8 @@ claude-usage-dashboard/
 │   │   ├── errorHandler.js
 │   │   └── security.js
 │   ├── config/          # 設定ファイル
-│   │   └── paths.js
+│   │   ├── paths.js
+│   │   └── model-pricing.json  # モデル別単価の単一情報源 (Node/Rust共用)
 │   ├── App.tsx          # メインReactコンポーネント（TypeScript）
 │   └── index.tsx        # Reactエントリーポイント（TypeScript）
 ├── public/              # React パブリックファイル

@@ -12,6 +12,10 @@ struct Args {
     /// Path to Claude projects directory
     #[arg(short, long)]
     projects_path: String,
+
+    /// Path to model-pricing.json (省略時はビルド時に埋め込んだコピーを使用)
+    #[arg(long)]
+    pricing_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -215,26 +219,74 @@ struct ModelData {
     cache_read_tokens: u64,
 }
 
-/// モデル別の ($/token 入力, $/token 出力)。Node側 pricingService.js と一致させること。
-fn pricing_for_model(model: Option<&str>) -> (f64, f64) {
-    let m = model.unwrap_or("").to_lowercase();
-    if m.contains("fable") || m.contains("mythos") {
-        (10.0e-6, 50.0e-6)
-    } else if m.contains("claude-3-opus") || m.contains("opus-4-2025") || m.contains("opus-4-1") {
-        (15.0e-6, 75.0e-6)
-    } else if m.contains("opus") {
-        (5.0e-6, 25.0e-6)
-    } else if m.contains("3-haiku") {
-        (0.25e-6, 1.25e-6)
-    } else if m.contains("haiku") {
-        (1.0e-6, 5.0e-6)
-    } else {
-        // sonnet系・不明モデルはSonnet価格
-        (3.0e-6, 15.0e-6)
-    }
+// ==== 価格設定 ====
+// 単一情報源は src/config/model-pricing.json。実行時に --pricing-path で渡されたファイルを読み、
+// 無ければビルド時に埋め込んだ同ファイルのコピーを使う(Node側 pricingService.js も同じJSONを読む)。
+const EMBEDDED_PRICING: &str = include_str!("../../src/config/model-pricing.json");
+
+#[derive(Debug, Deserialize, Clone, Copy)]
+struct ModelPrice {
+    input: f64,  // $/1Mトークン
+    output: f64, // $/1Mトークン
 }
 
-fn calculate_usage_metrics(usage: &Usage, model: Option<&str>) -> UsageMetrics {
+#[derive(Debug, Deserialize)]
+struct CachePricing {
+    #[serde(rename = "creationMultiplier")]
+    creation_multiplier: f64,
+    #[serde(rename = "readMultiplier")]
+    read_multiplier: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct FallbackRule {
+    keywords: Vec<String>,
+    #[serde(rename = "use")]
+    use_model: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct FallbackConfig {
+    rules: Vec<FallbackRule>,
+    #[serde(rename = "default")]
+    default_model: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PricingConfig {
+    cache: CachePricing,
+    models: HashMap<String, ModelPrice>,
+    fallbacks: FallbackConfig,
+}
+
+fn load_pricing_config(pricing_path: Option<&str>) -> Result<PricingConfig> {
+    let raw = match pricing_path {
+        Some(path) => fs::read_to_string(path)
+            .context(format!("Failed to read pricing config: {}", path))?,
+        None => EMBEDDED_PRICING.to_string(),
+    };
+    serde_json::from_str(&raw).context("Failed to parse pricing config")
+}
+
+fn pricing_for_model(cfg: &PricingConfig, model: Option<&str>) -> ModelPrice {
+    let name = model.unwrap_or("");
+    if let Some(price) = cfg.models.get(name) {
+        return *price;
+    }
+    let lower = name.to_lowercase();
+    if !(lower.contains("synthetic") || lower.starts_with('<')) {
+        for rule in &cfg.fallbacks.rules {
+            if rule.keywords.iter().any(|k| lower.contains(k.as_str())) {
+                if let Some(price) = cfg.models.get(&rule.use_model) {
+                    return *price;
+                }
+            }
+        }
+    }
+    cfg.models[&cfg.fallbacks.default_model]
+}
+
+fn calculate_usage_metrics(cfg: &PricingConfig, usage: &Usage, model: Option<&str>) -> UsageMetrics {
     let new_input = usage.input_tokens.unwrap_or(0);
     let output_tokens = usage.output_tokens.unwrap_or(0);
     let cache_creation_tokens = usage.cache_creation_tokens.unwrap_or(0);
@@ -242,15 +294,18 @@ fn calculate_usage_metrics(usage: &Usage, model: Option<&str>) -> UsageMetrics {
 
     // Node実装と同じ定義:
     //   inputTokens  = 新規入力 + キャッシュ作成（フル価格帯）
-    //   cachedTokens = キャッシュ読み取り（0.1倍価格）
+    //   cachedTokens = キャッシュ読み取り
     let input_tokens = new_input + cache_creation_tokens;
     let cached_tokens = cache_read_tokens;
     let total_tokens = input_tokens + cached_tokens + output_tokens;
 
-    let (in_price, out_price) = pricing_for_model(model);
+    let price = pricing_for_model(cfg, model);
+    let per_token = 1.0e-6; // JSONは$/1Mトークン表記
+    let in_price = price.input * per_token;
+    let out_price = price.output * per_token;
     let cost = (new_input as f64) * in_price
-        + (cache_read_tokens as f64) * in_price * 0.1
-        + (cache_creation_tokens as f64) * in_price * 1.25
+        + (cache_read_tokens as f64) * in_price * cfg.cache.read_multiplier
+        + (cache_creation_tokens as f64) * in_price * cfg.cache.creation_multiplier
         + (output_tokens as f64) * out_price;
 
     UsageMetrics {
@@ -281,7 +336,7 @@ fn usage_total_of(usage: &Usage) -> u64 {
         + usage.cache_read_tokens.unwrap_or(0)
 }
 
-fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
+fn process_project_data(projects_path: &str, pricing: &PricingConfig) -> Result<ProcessedData> {
     let project_dirs: Vec<PathBuf> = fs::read_dir(projects_path)
         .context("Failed to read projects directory")?
         .filter_map(|entry| entry.ok())
@@ -393,7 +448,7 @@ fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
 
     for entry in dedup.values() {
         let model = entry.model.clone().unwrap_or_else(|| "unknown".to_string());
-        let metrics = calculate_usage_metrics(&entry.usage, Some(&model));
+        let metrics = calculate_usage_metrics(pricing, &entry.usage, Some(&model));
 
         if let Some(timestamp) = &entry.timestamp {
             if let Some(session_id) = &entry.session_id {
@@ -610,7 +665,8 @@ fn process_project_data(projects_path: &str) -> Result<ProcessedData> {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let data = process_project_data(&args.projects_path)
+    let pricing = load_pricing_config(args.pricing_path.as_deref())?;
+    let data = process_project_data(&args.projects_path, &pricing)
         .context("Failed to process project data")?;
 
     let json = serde_json::to_string(&data)

@@ -62,7 +62,8 @@ claude-usage-dashboard/
 │   │   ├── errorHandler.js
 │   │   └── security.js
 │   ├── config/          # Configuration
-│   │   └── paths.js
+│   │   ├── paths.js
+│   │   └── model-pricing.json  # モデル別単価の単一情報源 (Node/Rust共用)
 │   ├── App.tsx           # Main React component
 │   └── index.tsx         # React entry point
 ├── public/              # React public files
@@ -131,7 +132,7 @@ The application reads data from these Claude Code locations:
 - **todoService.js**: Handles todo file management data
 - **vscodeService.js**: Processes VS Code extension task data
 - **projectService.js**: Aggregates usage data by project/date/model. Deduplicates streamed JSONL entries by `message.id` + `requestId` (largest-usage entry wins) — naive summing double-counts by ~2x
-- **pricingService.js**: Calculates costs based on Claude pricing
+- **pricingService.js**: Calculates costs based on Claude pricing. Rates live in `src/config/model-pricing.json` — the single source of truth shared with rust-processor (passed via `--pricing-path`; embedded copy as fallback)
 - **cacheService.js**: In-memory caching for performance
 - **sessionService.js**: Parses conversation transcripts for the session browser (same dedup as projectService)
 - **archiveService.js**: Snapshots daily aggregates to `data/daily-archive.json` every 6h so history survives Claude Code's ~30-day transcript cleanup; `/api/v2/daily` backfills missing days from it

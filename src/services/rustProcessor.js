@@ -4,6 +4,7 @@ const { CLAUDE_PATHS } = require('../config/paths');
 
 // Rustプロセッサのパス
 const RUST_PROCESSOR_PATH = path.join(__dirname, '../../rust-processor/target/release/rust-processor');
+const PRICING_CONFIG_PATH = path.join(__dirname, '../config/model-pricing.json');
 
 // 環境変数でRust使用のON/OFF切り替え
 const USE_RUST = process.env.USE_RUST !== 'false';
@@ -22,7 +23,7 @@ function processProjectDataWithRust() {
 
     const result = execFileSync(
       RUST_PROCESSOR_PATH,
-      ['--projects-path', CLAUDE_PATHS.projects],
+      ['--projects-path', CLAUDE_PATHS.projects, '--pricing-path', PRICING_CONFIG_PATH],
       {
         encoding: 'utf8',
         maxBuffer: 50 * 1024 * 1024, // 50MB

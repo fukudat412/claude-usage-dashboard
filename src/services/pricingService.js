@@ -1,159 +1,56 @@
-const PRICING = {
-  // Claude 5 / Fable
-  'claude-fable-5': {
-    input: 10.00 / 1_000_000,
-    output: 50.00 / 1_000_000
-  },
-  'claude-sonnet-5': {
-    input: 3.00 / 1_000_000,
-    output: 15.00 / 1_000_000
-  },
+// モデル別単価の単一情報源は src/config/model-pricing.json。
+// Rust実装(rust-processor)も同じJSONを読むため、単価の変更はJSONの編集だけで両実装に反映される。
+const pricingConfig = require('../config/model-pricing.json');
 
-  // Claude Opus 4.5+ (値下げ後の価格)
-  'claude-opus-4-8': {
-    input: 5.00 / 1_000_000,
-    output: 25.00 / 1_000_000
-  },
-  'claude-opus-4-7': {
-    input: 5.00 / 1_000_000,
-    output: 25.00 / 1_000_000
-  },
-  'claude-opus-4-6': {
-    input: 5.00 / 1_000_000,
-    output: 25.00 / 1_000_000
-  },
-  'claude-opus-4-5': {
-    input: 5.00 / 1_000_000,
-    output: 25.00 / 1_000_000
-  },
+const PER_TOKEN = 1 / 1_000_000; // JSONは$/1Mトークン表記
 
-  // Claude Opus models (旧価格帯)
-  'claude-3-opus-20240229': {
-    input: 15.00 / 1_000_000,
-    output: 75.00 / 1_000_000
-  },
-  'claude-opus-4-20250514': {
-    input: 15.00 / 1_000_000,
-    output: 75.00 / 1_000_000
-  },
+// { model: { input, output } } を $/トークン に変換して保持
+const PRICING = Object.fromEntries(
+  Object.entries(pricingConfig.models).map(([model, price]) => [
+    model,
+    { input: price.input * PER_TOKEN, output: price.output * PER_TOKEN },
+  ])
+);
 
-  // Claude Sonnet models
-  'claude-sonnet-4-20250514': {
-    input: 3.00 / 1_000_000,
-    output: 15.00 / 1_000_000
-  },
-  'claude-sonnet-4-5-20250929': {  // New model
-    input: 3.00 / 1_000_000,
-    output: 15.00 / 1_000_000
-  },
-  'claude-3-5-sonnet-20241022': {
-    input: 3.00 / 1_000_000,
-    output: 15.00 / 1_000_000
-  },
-  'claude-3-5-sonnet-20240620': {
-    input: 3.00 / 1_000_000,
-    output: 15.00 / 1_000_000
-  },
-  'claude-3-sonnet-20240229': {
-    input: 3.00 / 1_000_000,
-    output: 15.00 / 1_000_000
-  },
-
-  // Claude Haiku models
-  'claude-haiku-4-5-20251001': {
-    input: 1.00 / 1_000_000,
-    output: 5.00 / 1_000_000
-  },
-  'claude-haiku-4-5': {
-    input: 1.00 / 1_000_000,
-    output: 5.00 / 1_000_000
-  },
-  'claude-3-5-haiku-20241022': {
-    input: 1.00 / 1_000_000,
-    output: 5.00 / 1_000_000
-  },
-  'claude-3-haiku-20240307': {
-    input: 0.25 / 1_000_000,
-    output: 1.25 / 1_000_000
-  },
-
-  // GPT models
-  'gpt-4': {
-    input: 30.00 / 1_000_000,
-    output: 60.00 / 1_000_000
-  },
-  'gpt-4-turbo': {
-    input: 10.00 / 1_000_000,
-    output: 30.00 / 1_000_000
-  },
-  'gpt-3.5-turbo': {
-    input: 0.50 / 1_000_000,
-    output: 1.50 / 1_000_000
-  }
-};
+const CACHE_CREATION_MULTIPLIER = pricingConfig.cache.creationMultiplier;
+const CACHE_READ_MULTIPLIER = pricingConfig.cache.readMultiplier;
+const FALLBACK_RULES = pricingConfig.fallbacks.rules;
+const DEFAULT_MODEL = pricingConfig.fallbacks.default;
 
 function getPricingForModel(model) {
   if (!model) {
-    return PRICING['claude-3-5-sonnet-20241022']; // Default
+    return PRICING[DEFAULT_MODEL];
   }
 
-  // Normalize model name
-  const normalizedModel = model.toLowerCase();
-
-  // Try exact match first
+  // 完全一致を最優先
   if (PRICING[model]) {
     return PRICING[model];
   }
 
-  // Handle special model types (synthetic, test models, etc.)
+  const normalizedModel = model.toLowerCase();
+
+  // synthetic等の内部プレースホルダは警告なしでデフォルト
   if (normalizedModel.includes('synthetic') || normalizedModel.startsWith('<')) {
-    // Don't warn for special/test models, just return default pricing
-    return PRICING['claude-3-5-sonnet-20241022'];
+    return PRICING[DEFAULT_MODEL];
   }
 
-  // Pattern matching for model families
-  if (normalizedModel.includes('fable') || normalizedModel.includes('mythos')) {
-    return PRICING['claude-fable-5'];
-  } else if (normalizedModel.includes('opus')) {
-    // 旧世代(claude-3-opus / opus-4.0/4.1)は旧価格、それ以外(4.5+)は現行価格
-    if (normalizedModel.includes('claude-3-opus') ||
-        normalizedModel.includes('opus-4-2025') ||
-        normalizedModel.includes('opus-4-1')) {
-      return PRICING['claude-3-opus-20240229'];
+  // ファミリー名によるフォールバック（JSONのrulesを上から順に適用）
+  for (const rule of FALLBACK_RULES) {
+    if (rule.keywords.some((keyword) => normalizedModel.includes(keyword))) {
+      return PRICING[rule.use];
     }
-    return PRICING['claude-opus-4-8'];
-  } else if (normalizedModel.includes('haiku')) {
-    // Prioritize newer Haiku version
-    if (normalizedModel.includes('4-5') || normalizedModel.includes('20251001')) {
-      return PRICING['claude-haiku-4-5-20251001'];
-    }
-    return PRICING['claude-3-5-haiku-20241022'];
-  } else if (normalizedModel.includes('sonnet')) {
-    // Prioritize newer Sonnet version
-    if (normalizedModel.includes('4-5') || normalizedModel.includes('20250929')) {
-      return PRICING['claude-sonnet-4-5-20250929'];
-    }
-    return PRICING['claude-3-5-sonnet-20241022'];
   }
 
-  // Unknown model - return default and warn
-  console.warn(`Unknown model: ${model}`);
-  return PRICING['claude-3-5-sonnet-20241022'];
+  console.warn(`Unknown model: ${model} — falling back to ${DEFAULT_MODEL} pricing`);
+  return PRICING[DEFAULT_MODEL];
 }
 
 function calculateCost(model, inputTokens = 0, outputTokens = 0, cacheReadTokens = 0, cacheCreationTokens = 0) {
   const pricing = getPricingForModel(model);
 
-  // New input tokens cost (full price)
   const inputCost = inputTokens * pricing.input;
-
-  // Cache read tokens cost (10% of input price)
-  const cacheReadCost = cacheReadTokens * pricing.input * 0.1;
-
-  // Cache creation tokens cost (5分TTLの書き込みは入力単価の1.25倍)
-  const cacheCreationCost = cacheCreationTokens * pricing.input * 1.25;
-
-  // Output tokens cost
+  const cacheReadCost = cacheReadTokens * pricing.input * CACHE_READ_MULTIPLIER;
+  const cacheCreationCost = cacheCreationTokens * pricing.input * CACHE_CREATION_MULTIPLIER;
   const outputCost = outputTokens * pricing.output;
 
   return inputCost + cacheReadCost + cacheCreationCost + outputCost;
@@ -173,25 +70,23 @@ function calculateUsageMetrics(usage, model) {
   const outputTokens = usage.output_tokens || 0;
   const cacheReadTokens = usage.cache_read_input_tokens || 0;
   const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
-  
+
   // Corrected calculations
   const totalInputTokens = newInputTokens + cacheCreationTokens; // Only tokens charged at full price
-  const totalCacheTokens = cacheReadTokens; // Tokens charged at 10% (read from cache)
+  const totalCacheTokens = cacheReadTokens; // Tokens charged at read-multiplier price
   const totalTokens = totalInputTokens + totalCacheTokens + outputTokens;
-  
+
   const cost = calculateCost(model, newInputTokens, outputTokens, cacheReadTokens, cacheCreationTokens);
-  
+
   return {
-    // Clarified token breakdown
     inputTokens: totalInputTokens, // New input + cache creation (full price)
-    outputTokens: outputTokens, // Output tokens
-    cachedTokens: totalCacheTokens, // Cache read tokens (10% price)
-    
-    // Detailed breakdown for analysis
-    newInputTokens, // Only new input tokens
-    cacheCreationTokens, // Cache creation tokens
-    cacheReadTokens, // Cache read tokens
-    
+    outputTokens: outputTokens,
+    cachedTokens: totalCacheTokens, // Cache read tokens
+
+    newInputTokens,
+    cacheCreationTokens,
+    cacheReadTokens,
+
     totalTokens,
     cost
   };
