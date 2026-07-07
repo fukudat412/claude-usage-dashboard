@@ -121,7 +121,7 @@ docker-compose down
 
 The application reads data from these Claude Code locations:
 - **MCP Logs**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
-- **Conversation Transcripts**: `~/.claude/projects/*/*.jsonl` (usage aggregation + session browser)
+- **Conversation Transcripts**: `~/.claude/projects/**/*.jsonl` — collected recursively; subagent transcripts live in `<sessionId>/subagents/agent-*.jsonl` and account for ~1/4 of total usage (usage aggregation + session browser)
 - **Todo History**: `~/.claude/todos/`
 - **VS Code Extension**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
 

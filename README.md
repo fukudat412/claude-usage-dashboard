@@ -207,7 +207,7 @@ npm start
 以下のClaude Codeデータを読み取ります：
 
 - **MCPログ**: `~/Library/Caches/claude-cli-nodejs/*/mcp-logs-ide/`
-- **会話トランスクリプト**: `~/.claude/projects/*/*.jsonl`（使用量集計・会話ログ表示）
+- **会話トランスクリプト**: `~/.claude/projects/**/*.jsonl`（再帰的に収集。サブエージェント分は `<sessionId>/subagents/` 配下に別保存されており、これも集計対象）
 - **Todo履歴**: `~/.claude/todos/`
 - **VS Code拡張ログ**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/`
 

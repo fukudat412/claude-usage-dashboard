@@ -329,6 +329,20 @@ struct DedupEntry {
     usage_total: u64,
 }
 
+/// サブエージェントのトランスクリプト(<sessionId>/subagents/agent-*.jsonl)も含めるため、
+/// プロジェクト配下の .jsonl を再帰的に収集する
+fn collect_jsonl_files(dir: &PathBuf, out: &mut Vec<PathBuf>) -> Result<()> {
+    for entry in fs::read_dir(dir).context(format!("Failed to read dir: {:?}", dir))? {
+        let path = entry?.path();
+        if path.is_dir() {
+            collect_jsonl_files(&path, out)?;
+        } else if path.extension().and_then(|e| e.to_str()) == Some("jsonl") {
+            out.push(path);
+        }
+    }
+    Ok(())
+}
+
 fn usage_total_of(usage: &Usage) -> u64 {
     usage.input_tokens.unwrap_or(0)
         + usage.output_tokens.unwrap_or(0)
@@ -359,17 +373,8 @@ fn process_project_data(projects_path: &str, pricing: &PricingConfig) -> Result<
             .unwrap_or("Unknown")
             .to_string();
 
-        let files: Vec<PathBuf> = fs::read_dir(project_dir)
-            .context(format!("Failed to read project directory: {:?}", project_dir))?
-            .filter_map(|entry| entry.ok())
-            .map(|entry| entry.path())
-            .filter(|path| {
-                path.extension()
-                    .and_then(|ext| ext.to_str())
-                    .map(|ext| ext == "jsonl")
-                    .unwrap_or(false)
-            })
-            .collect();
+        let mut files: Vec<PathBuf> = Vec::new();
+        collect_jsonl_files(project_dir, &mut files)?;
 
         let mut message_count = 0usize;
         let mut last_activity: Option<String> = None;

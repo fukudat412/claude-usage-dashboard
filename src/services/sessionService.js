@@ -160,6 +160,32 @@ async function parseSessionFile(filePath, { withMessages = false } = {}) {
     }
   }
 
+  // サブエージェント(<sessionId>/subagents/agent-*.jsonl)の使用量もこのセッションに合算する
+  const subagentsDir = path.join(path.dirname(filePath), sessionId, 'subagents');
+  if (await fs.pathExists(subagentsDir)) {
+    const subFiles = (await fs.readdir(subagentsDir)).filter((f) => f.endsWith('.jsonl'));
+    for (const subFile of subFiles) {
+      const subStream = fs.createReadStream(path.join(subagentsDir, subFile), { encoding: 'utf8' });
+      const subRl = readline.createInterface({ input: subStream, crlfDelay: Infinity });
+      for await (const line of subRl) {
+        if (!line) continue;
+        let entry;
+        try { entry = JSON.parse(line); } catch { continue; }
+        if (entry.type !== 'assistant') continue;
+        const usage = entry.message?.usage;
+        if (!usage) continue;
+        const messageId = entry.message?.id;
+        const requestId = entry.requestId;
+        const key = (messageId || requestId)
+          ? 'sub:' + (messageId || '') + ':' + (requestId || '')
+          : '__nokey__:' + (fallbackKey++);
+        const total = usageTotalOf(usage);
+        if (total > (usageByKey.get(key) || 0)) usageByKey.set(key, total);
+        if (entry.message?.model) summary.models.add(entry.message.model);
+      }
+    }
+  }
+
   summary.assistantMessages = assistantByKey.size;
   summary.totalTokens = [...usageByKey.values()].reduce((a, b) => a + b, 0);
 

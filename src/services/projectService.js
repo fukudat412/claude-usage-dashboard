@@ -33,19 +33,32 @@ async function processProjectDataNodeJS() {
       (usage.cache_creation_input_tokens || 0) +
       (usage.cache_read_input_tokens || 0);
 
+    // サブエージェントのトランスクリプトは <sessionId>/subagents/agent-*.jsonl に
+    // 保存されるため、プロジェクト配下の .jsonl を再帰的に収集する
+    async function collectJsonlFiles(dir) {
+      const collected = [];
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const entryPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          collected.push(...await collectJsonlFiles(entryPath));
+        } else if (entry.name.endsWith('.jsonl')) {
+          collected.push(entryPath);
+        }
+      }
+      return collected;
+    }
+
     await Promise.all(projectDirs.map(async (projectDir) => {
       const projectPath = path.join(CLAUDE_PATHS.projects, projectDir);
       const stats = await fs.stat(projectPath);
       if (!stats.isDirectory()) return;
 
-      const files = await fs.readdir(projectPath);
+      const files = await collectJsonlFiles(projectPath);
       const meta = { messageCount: 0, lastActivity: null, path: projectPath };
       projectMeta.set(projectDir, meta);
 
-      await Promise.all(files.map(async (file) => {
-        if (!file.endsWith('.jsonl')) return;
-
-        const filePath = path.join(projectPath, file);
+      await Promise.all(files.map(async (filePath) => {
         const content = await fs.readFile(filePath, 'utf8');
         const lines = content.split('\n').filter(line => line.trim());
 
