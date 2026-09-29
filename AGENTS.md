@@ -132,7 +132,7 @@ The application reads data from these Claude Code locations:
 - **todoService.js**: Handles todo file management data
 - **vscodeService.js**: Processes VS Code extension task data
 - **projectService.js**: Aggregates usage data by project/date/model. Deduplicates streamed JSONL entries by `message.id` + `requestId` (largest-usage entry wins) — naive summing double-counts by ~2x
-- **pricingService.js**: Calculates costs based on Claude pricing. Rates live in `src/config/model-pricing.json` — the single source of truth shared with rust-processor (passed via `--pricing-path`; embedded copy as fallback)
+- **pricingService.js**: Calculates costs based on Claude pricing. Rates live in `src/config/model-pricing.json` — the single source of truth shared with rust-processor (passed via `--pricing-path`; embedded copy as fallback). Cache writes are split by TTL from `usage.cache_creation` (5m = 1.25x, 1h = 2x input); per-model `cacheRead` overrides the 0.1x read rate (Fable 5.1, Opus 5.5)
 - **cacheService.js**: In-memory caching for performance
 - **sessionService.js**: Parses conversation transcripts for the session browser (same dedup as projectService)
 - **archiveService.js**: Snapshots daily aggregates to `data/daily-archive.json` every 6h so history survives Claude Code's ~30-day transcript cleanup; `/api/v2/daily` backfills missing days from it

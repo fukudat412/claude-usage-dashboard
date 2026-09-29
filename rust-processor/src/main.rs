@@ -46,6 +46,13 @@ struct Usage {
     cache_creation_tokens: Option<u64>,
     #[serde(rename = "cache_read_input_tokens")]
     cache_read_tokens: Option<u64>,
+    // TTL別の内訳。古いログには無い(その場合は全量を5分TTLとみなす)
+    cache_creation: Option<CacheCreation>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CacheCreation {
+    ephemeral_1h_input_tokens: Option<u64>,
 }
 
 #[derive(Debug, Clone)]
@@ -228,12 +235,17 @@ const EMBEDDED_PRICING: &str = include_str!("../../src/config/model-pricing.json
 struct ModelPrice {
     input: f64,  // $/1Mトークン
     output: f64, // $/1Mトークン
+    // モデル固有のキャッシュ読み取り単価($/1M)。無ければ input × readMultiplier
+    #[serde(rename = "cacheRead")]
+    cache_read: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
 struct CachePricing {
-    #[serde(rename = "creationMultiplier")]
-    creation_multiplier: f64,
+    #[serde(rename = "write5mMultiplier")]
+    write_5m_multiplier: f64,
+    #[serde(rename = "write1hMultiplier")]
+    write_1h_multiplier: f64,
     #[serde(rename = "readMultiplier")]
     read_multiplier: f64,
 }
@@ -291,6 +303,13 @@ fn calculate_usage_metrics(cfg: &PricingConfig, usage: &Usage, model: Option<&st
     let output_tokens = usage.output_tokens.unwrap_or(0);
     let cache_creation_tokens = usage.cache_creation_tokens.unwrap_or(0);
     let cache_read_tokens = usage.cache_read_tokens.unwrap_or(0);
+    let cache_creation_1h = usage
+        .cache_creation
+        .as_ref()
+        .and_then(|c| c.ephemeral_1h_input_tokens)
+        .unwrap_or(0)
+        .min(cache_creation_tokens);
+    let cache_creation_5m = cache_creation_tokens - cache_creation_1h;
 
     // Node実装と同じ定義:
     //   inputTokens  = 新規入力 + キャッシュ作成（フル価格帯）
@@ -303,9 +322,14 @@ fn calculate_usage_metrics(cfg: &PricingConfig, usage: &Usage, model: Option<&st
     let per_token = 1.0e-6; // JSONは$/1Mトークン表記
     let in_price = price.input * per_token;
     let out_price = price.output * per_token;
+    let cache_read_price = price
+        .cache_read
+        .map(|p| p * per_token)
+        .unwrap_or(in_price * cfg.cache.read_multiplier);
     let cost = (new_input as f64) * in_price
-        + (cache_read_tokens as f64) * in_price * cfg.cache.read_multiplier
-        + (cache_creation_tokens as f64) * in_price * cfg.cache.creation_multiplier
+        + (cache_read_tokens as f64) * cache_read_price
+        + (cache_creation_5m as f64) * in_price * cfg.cache.write_5m_multiplier
+        + (cache_creation_1h as f64) * in_price * cfg.cache.write_1h_multiplier
         + (output_tokens as f64) * out_price;
 
     UsageMetrics {
