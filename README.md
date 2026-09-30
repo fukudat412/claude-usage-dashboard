@@ -149,6 +149,8 @@ npm run dev
 npm run dev:server
 ```
 
+> nodemon は `package.json` の `nodemonConfig.ignore` で `data/`・`build/`・フロントエンドのソースを監視対象から外しています（`data/daily-archive.json` の書き込みで再起動が無限ループするのを防ぐため）。
+
 本番モード:
 ```bash
 npm start

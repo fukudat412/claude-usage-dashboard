@@ -56,5 +56,16 @@
     "dashboard"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "nodemonConfig": {
+    "ignore": [
+      "data/*",
+      "build/*",
+      "work/*",
+      "src/components/*",
+      "src/hooks/*",
+      "src/utils/*",
+      "*.test.*"
+    ]
+  }
 }
